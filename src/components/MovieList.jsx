@@ -46,19 +46,31 @@ export const MovieList = () => {
         <div className="flex items-center font-thin justify-end mx-2">
           <ul className="text-gray-200 flex items-center space-x-2">
             <li
-              className="border rounded-md px-2 border-blue-500"
+              className={
+                filterRating === 8
+                  ? "border rounded-md border-blue-500 px-2"
+                  : "border rounded-md px-2 "
+              }
               onClick={() => handleClick(8)}
             >
               8+ Star
             </li>
             <li
-              className="border rounded-md px-2  border-gray-500"
+              className={
+                filterRating === 7
+                  ? "border rounded-md border-blue-500 px-2"
+                  : "border rounded-md px-2 "
+              }
               onClick={() => handleClick(7)}
             >
               7+ Star
             </li>
             <li
-              className="border rounded-md px-2 border-gray-500"
+              className={
+                filterRating === 6
+                  ? " border rounded-md border-blue-500 px-2"
+                  : "border rounded-md px-2 "
+              }
               onClick={() => handleClick(6)}
             >
               6+ Star
