@@ -2,6 +2,7 @@ import React from "react";
 import Fire from "../assets/fire.png";
 import Star from "../assets/glowing-star.png";
 import Party from "../assets/partying-face.png";
+import DarkMode from "./DarkMode"
 
 
 
@@ -12,7 +13,7 @@ const Navbar = () => {
         <h1>MovieManiac</h1>
       </div>
       <div className="flex space-x-4">
-        
+        <DarkMode/>
         <a href="#" className="flex items-center space-x-1">
           <img src={Fire} alt="fire" className="h-4 w-4" />
           <span>Popular</span>
