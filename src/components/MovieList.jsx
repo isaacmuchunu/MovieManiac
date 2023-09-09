@@ -48,6 +48,7 @@ export const MovieList = () => {
           <FilterRating
             filterRating={filterRating}
             onRatingClick={handleClick}
+            ratings={[8,7,6]}
           />
           <select
             name="sort and filter"
