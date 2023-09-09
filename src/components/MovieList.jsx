@@ -25,9 +25,14 @@ export const MovieList = () => {
   };
 
   const handleClick = (rate) => {
-    setFilterRating(rate);
-    const filterRating = movies.filter((movie) => movie.vote_average >= rate);
-    setFilteredMovies(filterRating);
+    if (rate === filterRating) {
+      setFilterRating(0);
+      setFilteredMovies(movies);
+    } else {
+      setFilterRating(rate);
+      const filterRating = movies.filter((movie) => movie.vote_average >= rate);
+      setFilteredMovies(filterRating);
+    }
   };
 
   return (
