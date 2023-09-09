@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import fire from "../assets/fire.png";
 import MovieCard from "./MovieCard";
+import FilterRating from "./FilterRating";
 
 export const MovieList = () => {
   const [movies, setMovies] = useState([]);
@@ -44,39 +45,10 @@ export const MovieList = () => {
         </header>
 
         <div className="flex items-center font-thin justify-end mx-2">
-          <ul className="text-gray-200 flex items-center space-x-2">
-            <li
-              className={
-                filterRating === 8
-                  ? "border rounded-md border-blue-500 px-2"
-                  : "border rounded-md px-2 "
-              }
-              onClick={() => handleClick(8)}
-            >
-              8+ Star
-            </li>
-            <li
-              className={
-                filterRating === 7
-                  ? "border rounded-md border-blue-500 px-2"
-                  : "border rounded-md px-2 "
-              }
-              onClick={() => handleClick(7)}
-            >
-              7+ Star
-            </li>
-            <li
-              className={
-                filterRating === 6
-                  ? " border rounded-md border-blue-500 px-2"
-                  : "border rounded-md px-2 "
-              }
-              onClick={() => handleClick(6)}
-            >
-              6+ Star
-            </li>
-          </ul>
-
+          <FilterRating
+            filterRating={filterRating}
+            onRatingClick={handleClick}
+          />
           <select
             name="sort and filter"
             className="bg-gray-800 border border-gray-500 text-gray-200 rounded-md mx-2 px-1"
