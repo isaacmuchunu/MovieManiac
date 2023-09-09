@@ -2,19 +2,27 @@ import { useEffect, useState } from "react";
 import fire from "../assets/fire.png";
 import MovieCard from "./MovieCard";
 import FilterRating from "./FilterRating";
-
+import _ from "lodash";
 export const MovieList = () => {
   const [movies, setMovies] = useState([]);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const [filterRating, setFilterRating] = useState(0);
   const [sort, setSort] = useState({
-    by:"default",
-    order: "asc"
-  })
+    by: "default",
+    order: "asc",
+  });
 
   useEffect(() => {
     fetchMovies();
   }, []);
+  useEffect(() => {
+    if(sort.by !== "default"){
+       const sortedMovies =  _.orderBy(filteredMovies, [sort.by], [sort.order])
+       setFilteredMovies(sortedMovies)
+
+    }
+
+  },[sort])
 
   const fetchMovies = async () => {
     try {
@@ -39,13 +47,13 @@ export const MovieList = () => {
       setFilteredMovies(filterRating);
     }
   };
-  const handleSort =(event) => {
-    const {name, value}= event.target
+  const handleSort = (event) => {
+    const { name, value } = event.target;
     setSort((prev) => {
-        return {...prev, [name]:value}
-    })
-  }
-console.log(sort)
+      return { ...prev, [name]: value };
+    });
+    console.log(sort);
+  };
   return (
     <div>
       <div className="pl-4 flex items-center justify-between font-poppins my-2">
@@ -58,7 +66,7 @@ console.log(sort)
           <FilterRating
             filterRating={filterRating}
             onRatingClick={handleClick}
-            ratings={[8,7,6]}
+            ratings={[8, 7, 6]}
           />
           <select
             name="by"
