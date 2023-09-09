@@ -7,6 +7,10 @@ export const MovieList = () => {
   const [movies, setMovies] = useState([]);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const [filterRating, setFilterRating] = useState(0);
+  const [sort, setSort] = useState({
+    by:"default",
+    order: "asc"
+  })
 
   useEffect(() => {
     fetchMovies();
@@ -35,7 +39,13 @@ export const MovieList = () => {
       setFilteredMovies(filterRating);
     }
   };
-
+  const handleSort =(event) => {
+    const {name, value}= event.target
+    setSort((prev) => {
+        return {...prev, [name]:value}
+    })
+  }
+console.log(sort)
   return (
     <div>
       <div className="pl-4 flex items-center justify-between font-poppins my-2">
@@ -51,19 +61,23 @@ export const MovieList = () => {
             ratings={[8,7,6]}
           />
           <select
-            name="sort and filter"
+            name="by"
+            onChange={handleSort}
+            value={sort.by}
             className="bg-gray-800 border border-gray-500 text-gray-200 rounded-md mx-2 px-1"
           >
-            <option>Sort By</option>
-            <option>Date</option>
-            <option>Rating</option>
+            <option value="Default">Sort By</option>
+            <option value="release_date">Date</option>
+            <option value="vote_average">Rating</option>
           </select>
           <select
-            name=""
+            name="order"
+            onChange={handleSort}
+            value={sort.order}
             className="bg-gray-800 border border-gray-500 text-gray-200 rounded-md px-1"
           >
-            <option>Ascending</option>
-            <option>Descending</option>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
           </select>
         </div>
       </div>
