@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import fire from "../assets/fire.png";
 import MovieCard from "./MovieCard";
 import FilterRating from "./FilterRating";
 import _ from "lodash";
-export const MovieList = () => {
+export const MovieList = ({type, title, emoji}) => {
   const [movies, setMovies] = useState([]);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const [filterRating, setFilterRating] = useState(0);
@@ -16,19 +15,17 @@ export const MovieList = () => {
     fetchMovies();
   }, []);
   useEffect(() => {
-    if(sort.by !== "default"){
-       const sortedMovies =  _.orderBy(filteredMovies, [sort.by], [sort.order])
-       setFilteredMovies(sortedMovies)
-
+    if (sort.by !== "default") {
+      const sortedMovies = _.orderBy(filteredMovies, [sort.by], [sort.order]);
+      setFilteredMovies(sortedMovies);
     }
-
-  },[sort])
+  }, [sort]);
 
   const fetchMovies = async () => {
     try {
       const res = await fetch(
-        "https://api.themoviedb.org/3/movie/popular?api_key=617c0260598c225e728db47b98d5ea6f"
-      );
+`        https://api.themoviedb.org/3/movie/${type}?api_key=617c0260598c225e728db47b98d5ea6f
+`      );
       const data = await res.json();
       setMovies(data.results.slice(0, 15));
       setFilteredMovies(data.results.slice(0, 15));
@@ -55,11 +52,11 @@ export const MovieList = () => {
     console.log(sort);
   };
   return (
-    <div>
+    <div id={type}>
       <div className="pl-4 flex items-center justify-between font-poppins my-2">
         <header className="flex items-center">
-          <img src={fire} alt="fire" className="h-4 w-4" />
-          <h2 className="text-gray-200 text-xl font-semibold">Popular</h2>
+          <img src={emoji} alt={`${emoji} Icon`} className="h-4 w-4" />
+          <h2 className="text-gray-200 text-xl font-semibold">{title}</h2>
         </header>
 
         <div className="flex items-center font-thin justify-end mx-2">

@@ -14,15 +14,15 @@ const Navbar = () => {
       </div>
       <div className="flex space-x-4">
         <DarkMode/>
-        <a href="#" className="flex items-center space-x-1">
+        <a href="#popular" className="flex items-center space-x-1">
           <img src={Fire} alt="fire" className="h-4 w-4" />
           <span>Popular</span>
         </a>
-        <a href="#" className="flex items-center space-x-1">
+        <a href="#top_rated" className="flex items-center space-x-1">
           <img src={Star} alt="star" className="h-4 w-4" />
           <span>Top Rated</span>
         </a>
-        <a href="#" className="flex items-center space-x-1">
+        <a href="#upcoming" className="flex items-center space-x-1">
           <img src={Party} alt="party" className="h-4 w-4" />
           <span>Upcoming</span>
         </a>
