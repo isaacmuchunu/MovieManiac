@@ -2,7 +2,16 @@
     margin-top: -20px;
     margin-left: 10px;
 }
-
+:root {
+    --body_background: #101010;
+    --body_color: #fff;
+    --heading_color: #ffe400
+}
+[data-theme="light"]{
+    --body_background: #fff;
+    --body_color: #000;
+    --heading_color: #000
+}
 .dark_mode_label {
     width: 65px;
     height: 30px;
