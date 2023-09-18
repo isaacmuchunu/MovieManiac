@@ -13,7 +13,7 @@ export const MovieList = ({type, title, emoji}) => {
 
   useEffect(() => {
     fetchMovies();
-  }, []);
+  }, [type]);
   useEffect(() => {
     if (sort.by !== "default") {
       const sortedMovies = _.orderBy(filteredMovies, [sort.by], [sort.order]);

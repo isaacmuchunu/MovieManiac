@@ -1,10 +1,8 @@
-import React from "react";
 import Fire from "../assets/fire.png";
 import Star from "../assets/glowing-star.png";
 import Party from "../assets/partying-face.png";
-import DarkMode from "./DarkMode"
-
-
+import DarkMode from "./DarkMode";
+import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
   return (
@@ -13,19 +11,28 @@ const Navbar = () => {
         <h1>MovieManiac</h1>
       </div>
       <div className="flex space-x-4">
-        <DarkMode/>
-        <a href="#popular" className="flex items-center space-x-1">
+        <DarkMode />
+        <NavLink
+          to="/"
+          className="flex items-center space-x-1 active:font-bold"
+        >
           <img src={Fire} alt="fire" className="h-4 w-4" />
           <span>Popular</span>
-        </a>
-        <a href="#top_rated" className="flex items-center space-x-1">
+        </NavLink>
+        <NavLink
+          to="/top_rated"
+          className="flex items-center space-x-1 active:font-bold"
+        >
           <img src={Star} alt="star" className="h-4 w-4" />
           <span>Top Rated</span>
-        </a>
-        <a href="#upcoming" className="flex items-center space-x-1">
+        </NavLink>
+        <NavLink
+          to="/upcoming"
+          className="flex items-center space-x-1 active:font-bold"
+        >
           <img src={Party} alt="party" className="h-4 w-4" />
           <span>Upcoming</span>
-        </a>
+        </NavLink>
       </div>
     </div>
   );
