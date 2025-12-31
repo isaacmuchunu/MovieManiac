@@ -5,6 +5,15 @@ import { userApi } from '../lib/backendApi';
 import { tmdbApi } from '../lib/videoProviders';
 import Loading from '../components/Loading';
 
+/**
+ * Render the user's Watch History UI and manage its state and interactions.
+ *
+ * Loads watch history on mount (backend → localStorage → demo trending items fallback),
+ * provides filtering (all, movies, series, inProgress), a "Continue Watching" section,
+ * controls to remove individual entries or clear all history, and navigation to watch or detail pages.
+ *
+ * @returns {JSX.Element} The Watch History component's rendered element.
+ */
 function WatchHistory() {
   const navigate = useNavigate();
   const { user } = useAuthStore();

@@ -14,6 +14,16 @@ const MOODS = [
   { id: 'nostalgic', emoji: '🥹', label: 'Nostalgic', color: 'from-amber-500 to-yellow-500', genreIds: [10751, 12] }, // Family, Adventure
 ];
 
+/**
+ * Render an AI-powered mood-based movie recommendations panel.
+ *
+ * When a mood is selected, fetches movies for the mood's primary genre, displays up to six
+ * recommendation cards with poster, title, genre label, and rating, and shows a loading state
+ * and an AI Insight summary. Includes a reset action to return to mood selection and a
+ * sign-in prompt when the user is not authenticated.
+ *
+ * @returns {JSX.Element} The recommendations panel UI.
+ */
 function AIRecommendations() {
   const { isAuthenticated } = useAuthStore();
   const [selectedMood, setSelectedMood] = useState(null);
