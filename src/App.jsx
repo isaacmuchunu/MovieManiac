@@ -17,6 +17,13 @@ import Series from "./pages/Series";
 import WatchHistory from "./pages/WatchHistory";
 import Profiles from "./pages/Profiles";
 
+// Admin imports
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import ContentManagement from "./pages/admin/ContentManagement";
+import UserManagement from "./pages/admin/UserManagement";
+import Analytics from "./pages/admin/Analytics";
+
 function App() {
   return (
     <div className="bg-netflix-black min-h-screen">
@@ -27,6 +34,18 @@ function App() {
 
         {/* Watch page without navbar/footer */}
         <Route path="/watch/:type/:id" element={<Watch />} />
+
+        {/* Admin panel with own layout */}
+        <Route path="/admin/*" element={
+          <AdminLayout>
+            <Routes>
+              <Route path="/" element={<AdminDashboard />} />
+              <Route path="/content" element={<ContentManagement />} />
+              <Route path="/users" element={<UserManagement />} />
+              <Route path="/analytics" element={<Analytics />} />
+            </Routes>
+          </AdminLayout>
+        } />
 
         {/* Main app with navbar/footer */}
         <Route path="/*" element={

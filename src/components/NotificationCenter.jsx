@@ -1,68 +1,50 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-// Sample notifications - in production these would come from an API
-const sampleNotifications = [
-  {
-    id: 1,
-    type: 'new_release',
-    title: 'New Release',
-    message: 'Squid Game Season 2 is now streaming!',
-    image: 'https://picsum.photos/seed/notif1/100/100',
-    link: '/series/1',
-    time: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'recommendation',
-    title: 'Recommended for You',
-    message: 'Based on your watch history: The Last of Us',
-    image: 'https://picsum.photos/seed/notif2/100/100',
-    link: '/series/2',
-    time: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'continue',
-    title: 'Continue Watching',
-    message: "Don't forget to finish Breaking Bad S5:E14",
-    image: 'https://picsum.photos/seed/notif3/100/100',
-    link: '/watch/101/s5e14',
-    time: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    read: true,
-  },
-  {
-    id: 4,
-    type: 'download',
-    title: 'Download Complete',
-    message: 'Wednesday Episode 1 is ready to watch offline',
-    image: 'https://picsum.photos/seed/notif4/100/100',
-    link: '/downloads',
-    time: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-  },
-  {
-    id: 5,
-    type: 'social',
-    title: 'Watch Party Invite',
-    message: 'John invited you to watch Money Heist together',
-    image: 'https://picsum.photos/seed/notif5/100/100',
-    link: '/watch/105?party=ABC123',
-    time: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-    read: true,
-  },
-];
+import { notificationsApi } from '../lib/backendApi';
+import { tmdbApi } from '../lib/videoProviders';
 
 const NotificationCenter = ({ isOpen, onClose }) => {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    // Load notifications
-    setNotifications(sampleNotifications);
-  }, []);
+    const fetchNotifications = async () => {
+      try {
+        // Try to fetch from backend API
+        const data = await notificationsApi.getNotifications().catch(() => null);
+
+        if (data && data.notifications) {
+          setNotifications(data.notifications.map(n => ({
+            ...n,
+            time: new Date(n.time || n.createdAt)
+          })));
+        } else {
+          // Generate notifications based on trending content for demo
+          const trending = await tmdbApi.getTrending();
+          const dynamicNotifications = trending.results.slice(0, 4).map((item, index) => ({
+            id: item.id,
+            type: index === 0 ? 'new_release' : index === 1 ? 'recommendation' : index === 2 ? 'continue' : 'social',
+            title: index === 0 ? 'New Release' : index === 1 ? 'Recommended for You' : index === 2 ? 'Continue Watching' : 'Trending Now',
+            message: index === 0 ? `${item.title || item.name} is now streaming!` :
+                     index === 1 ? `Based on your history: ${item.title || item.name}` :
+                     index === 2 ? `Continue watching ${item.title || item.name}` :
+                     `${item.title || item.name} is trending`,
+            image: item.poster_path ? `https://image.tmdb.org/t/p/w185${item.poster_path}` : 'https://via.placeholder.com/100',
+            link: item.media_type === 'tv' ? `/series/${item.id}` : `/movie/${item.id}`,
+            time: new Date(Date.now() - (1000 * 60 * 60 * index * 2)),
+            read: index > 1
+          }));
+          setNotifications(dynamicNotifications);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

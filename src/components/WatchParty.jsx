@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
+import { tmdbApi } from '../lib/videoProviders';
 
 function WatchParty() {
   const navigate = useNavigate();
@@ -10,14 +11,26 @@ function WatchParty() {
   const [partyCode, setPartyCode] = useState('');
   const [selectedContent, setSelectedContent] = useState(null);
   const [error, setError] = useState('');
+  const [popularForParties, setPopularForParties] = useState([]);
 
-  // Sample content for party
-  const popularForParties = [
-    { id: 1, title: 'Stranger Things', poster: 'https://picsum.photos/seed/party1/300/450', type: 'series' },
-    { id: 2, title: 'The Office', poster: 'https://picsum.photos/seed/party2/300/450', type: 'series' },
-    { id: 3, title: 'Squid Game', poster: 'https://picsum.photos/seed/party3/300/450', type: 'series' },
-    { id: 4, title: 'Money Heist', poster: 'https://picsum.photos/seed/party4/300/450', type: 'series' },
-  ];
+  // Fetch popular TV shows for watch parties
+  useEffect(() => {
+    const fetchPopular = async () => {
+      try {
+        const data = await tmdbApi.getPopularTvShows();
+        const formatted = (data.results || []).slice(0, 4).map(show => ({
+          id: show.id,
+          title: show.name,
+          poster: show.poster_path ? `https://image.tmdb.org/t/p/w300${show.poster_path}` : null,
+          type: 'series'
+        }));
+        setPopularForParties(formatted);
+      } catch (error) {
+        console.error('Error fetching popular shows:', error);
+      }
+    };
+    fetchPopular();
+  }, []);
 
   const generatePartyCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

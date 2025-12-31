@@ -1,69 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
+import { userApi } from '../lib/backendApi';
+import { tmdbApi } from '../lib/videoProviders';
 import Loading from '../components/Loading';
-
-// Sample watch history data
-const sampleHistory = [
-  {
-    id: 1,
-    contentId: 101,
-    title: 'Breaking Bad',
-    type: 'series',
-    poster: 'https://image.tmdb.org/t/p/w500/3xnWaLQjelJDDF7LT1WBo6f4BRe.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/original/zzWGRw277MNoCs3zhyG3YmYQsXv.jpg',
-    episode: { season: 2, episode: 5, title: 'Breakage' },
-    progress: 65,
-    duration: 47,
-    watchedAt: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-  },
-  {
-    id: 2,
-    contentId: 102,
-    title: 'The Dark Knight',
-    type: 'movie',
-    poster: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/original/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg',
-    progress: 100,
-    duration: 152,
-    watchedAt: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-  },
-  {
-    id: 3,
-    contentId: 103,
-    title: 'Stranger Things',
-    type: 'series',
-    poster: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/original/56v2KjBlU4XaOv9rVYEQypROD7P.jpg',
-    episode: { season: 4, episode: 9, title: 'The Piggyback' },
-    progress: 45,
-    duration: 142,
-    watchedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-  },
-  {
-    id: 4,
-    contentId: 104,
-    title: 'Inception',
-    type: 'movie',
-    poster: 'https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
-    progress: 100,
-    duration: 148,
-    watchedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-  },
-  {
-    id: 5,
-    contentId: 105,
-    title: 'Money Heist',
-    type: 'series',
-    poster: 'https://image.tmdb.org/t/p/w500/reEMJA1uzscCbkpeRJeTT2bjqUp.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/original/gFZriCkpJYsApPZEF3jhxL4yLzG.jpg',
-    episode: { season: 5, episode: 10, title: 'A Family Tradition' },
-    progress: 100,
-    duration: 75,
-    watchedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-  },
-];
 
 function WatchHistory() {
   const navigate = useNavigate();
@@ -73,11 +13,52 @@ function WatchHistory() {
   const [filter, setFilter] = useState('all'); // all, movies, series, inProgress
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setHistory(sampleHistory);
-      setLoading(false);
-    }, 500);
+    const fetchWatchHistory = async () => {
+      try {
+        // Try to fetch from backend API
+        const data = await userApi.getWatchHistory().catch(() => null);
+
+        if (data && data.history) {
+          // Map backend data to component format
+          setHistory(data.history.map(item => ({
+            ...item,
+            watchedAt: new Date(item.watchedAt)
+          })));
+        } else {
+          // Fallback: Get from localStorage or show recent TMDB content
+          const localHistory = JSON.parse(localStorage.getItem('moovie-watch-history') || '[]');
+
+          if (localHistory.length > 0) {
+            setHistory(localHistory.map(item => ({
+              ...item,
+              watchedAt: new Date(item.watchedAt)
+            })));
+          } else {
+            // Show trending as "recently watched" for demo
+            const trending = await tmdbApi.getTrending();
+            const demoHistory = trending.results.slice(0, 5).map((item, index) => ({
+              id: item.id,
+              contentId: item.id,
+              title: item.title || item.name,
+              type: item.media_type === 'tv' ? 'series' : 'movie',
+              poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+              backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+              episode: item.media_type === 'tv' ? { season: 1, episode: Math.floor(Math.random() * 10) + 1, title: 'Episode' } : null,
+              progress: Math.floor(Math.random() * 80) + 20,
+              duration: item.media_type === 'tv' ? 45 : 120,
+              watchedAt: new Date(Date.now() - (1000 * 60 * 60 * index * 3))
+            }));
+            setHistory(demoHistory);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching watch history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWatchHistory();
   }, []);
 
   const filteredHistory = history.filter((item) => {

@@ -2,6 +2,29 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import Loading from '../components/Loading';
+import { tmdbApi } from '../lib/videoProviders';
+
+// TMDB genre IDs mapping
+const TMDB_GENRE_IDS = {
+  action: 28,
+  adventure: 12,
+  animation: 16,
+  comedy: 35,
+  crime: 80,
+  documentary: 99,
+  drama: 18,
+  family: 10751,
+  fantasy: 14,
+  history: 36,
+  horror: 27,
+  music: 10402,
+  mystery: 9648,
+  romance: 10749,
+  'sci-fi': 878,
+  thriller: 53,
+  war: 10752,
+  western: 37,
+};
 
 const GENRES = [
   { name: 'Action', slug: 'action', icon: '💥' },
@@ -69,26 +92,6 @@ const RATING_FILTERS = [
   { value: '6', label: '6+ Stars' },
 ];
 
-// Sample data - in production, this would come from the API
-const generateSampleContent = (count = 20) => {
-  const titles = [
-    'The Dark Knight', 'Inception', 'Interstellar', 'Parasite', 'The Godfather',
-    'Pulp Fiction', 'Fight Club', 'The Matrix', 'Forrest Gump', 'The Shawshank Redemption',
-    'Breaking Bad', 'Game of Thrones', 'Stranger Things', 'The Crown', 'Money Heist',
-    'Squid Game', 'Wednesday', 'The Last of Us', 'House of the Dragon', 'Peaky Blinders'
-  ];
-
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    title: titles[i % titles.length],
-    poster_path: `https://picsum.photos/seed/${i + 100}/300/450`,
-    backdrop_path: `https://picsum.photos/seed/${i + 200}/1280/720`,
-    vote_average: (7 + Math.random() * 2).toFixed(1),
-    release_date: `${2020 + Math.floor(Math.random() * 4)}-0${1 + Math.floor(Math.random() * 9)}-${10 + Math.floor(Math.random() * 18)}`,
-    type: Math.random() > 0.5 ? 'movie' : 'series',
-    genres: GENRES.slice(Math.floor(Math.random() * 5), Math.floor(Math.random() * 5) + 3).map(g => g.name),
-  }));
-};
 
 function Browse() {
   const { genre } = useParams();
@@ -107,12 +110,91 @@ function Browse() {
   const currentGenre = genre ? GENRES.find(g => g.slug === genre) : null;
 
   useEffect(() => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setContent(generateSampleContent(24));
-      setLoading(false);
-    }, 500);
+    const fetchContent = async () => {
+      setLoading(true);
+      try {
+        let results = [];
+
+        // Determine if we're fetching movies, TV, or both
+        const fetchMovies = selectedType === 'all' || selectedType === 'movie';
+        const fetchTV = selectedType === 'all' || selectedType === 'series';
+
+        // Build API parameters
+        const genreId = genre ? TMDB_GENRE_IDS[genre] : null;
+
+        // Fetch based on type and filters
+        if (genreId) {
+          // Fetch by genre using discover
+          const moviePromise = fetchMovies ? tmdbApi.discoverByGenre(genreId, 'movie') : Promise.resolve({ results: [] });
+          const tvPromise = fetchTV ? tmdbApi.discoverByGenre(genreId, 'tv') : Promise.resolve({ results: [] });
+
+          const [movieData, tvData] = await Promise.all([moviePromise, tvPromise]);
+
+          results = [
+            ...(movieData.results || []).map(m => ({ ...m, media_type: 'movie' })),
+            ...(tvData.results || []).map(t => ({ ...t, media_type: 'tv' }))
+          ];
+        } else {
+          // Fetch trending/popular content
+          const trendingData = await tmdbApi.getTrending();
+          results = trendingData.results || [];
+
+          // Filter by type if specified
+          if (selectedType === 'movie') {
+            results = results.filter(item => item.media_type === 'movie');
+          } else if (selectedType === 'series') {
+            results = results.filter(item => item.media_type === 'tv');
+          }
+        }
+
+        // Apply rating filter
+        if (selectedRating !== 'all') {
+          const minRating = parseFloat(selectedRating);
+          results = results.filter(item => item.vote_average >= minRating);
+        }
+
+        // Apply year filter
+        if (selectedYear) {
+          results = results.filter(item => {
+            const releaseDate = item.release_date || item.first_air_date;
+            return releaseDate && releaseDate.startsWith(selectedYear);
+          });
+        }
+
+        // Apply sorting
+        if (selectedSort === 'rating') {
+          results.sort((a, b) => b.vote_average - a.vote_average);
+        } else if (selectedSort === 'release_date') {
+          results.sort((a, b) => {
+            const dateA = new Date(a.release_date || a.first_air_date || 0);
+            const dateB = new Date(b.release_date || b.first_air_date || 0);
+            return dateB - dateA;
+          });
+        } else if (selectedSort === 'title') {
+          results.sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
+        }
+        // popularity is default from API
+
+        // Format the results
+        setContent(results.map(item => ({
+          id: item.id,
+          title: item.title || item.name,
+          poster_path: item.poster_path,
+          backdrop_path: item.backdrop_path,
+          vote_average: item.vote_average,
+          release_date: item.release_date || item.first_air_date,
+          type: item.media_type === 'tv' ? 'series' : 'movie',
+          overview: item.overview
+        })));
+      } catch (error) {
+        console.error('Error fetching content:', error);
+        setContent([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContent();
   }, [genre, selectedType, selectedCountry, selectedSort, selectedRating, selectedYear]);
 
   const updateFilter = (key, value) => {

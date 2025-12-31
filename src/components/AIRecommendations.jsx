@@ -1,61 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
+import { tmdbApi } from '../lib/videoProviders';
 
 const MOODS = [
-  { id: 'happy', emoji: '😊', label: 'Happy', color: 'from-yellow-500 to-orange-500' },
-  { id: 'excited', emoji: '🤩', label: 'Excited', color: 'from-pink-500 to-red-500' },
-  { id: 'relaxed', emoji: '😌', label: 'Relaxed', color: 'from-green-500 to-teal-500' },
-  { id: 'romantic', emoji: '💕', label: 'Romantic', color: 'from-pink-400 to-rose-500' },
-  { id: 'adventurous', emoji: '🎯', label: 'Adventurous', color: 'from-blue-500 to-purple-500' },
-  { id: 'thoughtful', emoji: '🤔', label: 'Thoughtful', color: 'from-indigo-500 to-blue-500' },
-  { id: 'scared', emoji: '😨', label: 'Thrilled', color: 'from-gray-700 to-black' },
-  { id: 'nostalgic', emoji: '🥹', label: 'Nostalgic', color: 'from-amber-500 to-yellow-500' },
+  { id: 'happy', emoji: '😊', label: 'Happy', color: 'from-yellow-500 to-orange-500', genreIds: [35, 10751] }, // Comedy, Family
+  { id: 'excited', emoji: '🤩', label: 'Excited', color: 'from-pink-500 to-red-500', genreIds: [28, 12] }, // Action, Adventure
+  { id: 'relaxed', emoji: '😌', label: 'Relaxed', color: 'from-green-500 to-teal-500', genreIds: [35, 18] }, // Comedy, Drama
+  { id: 'romantic', emoji: '💕', label: 'Romantic', color: 'from-pink-400 to-rose-500', genreIds: [10749] }, // Romance
+  { id: 'adventurous', emoji: '🎯', label: 'Adventurous', color: 'from-blue-500 to-purple-500', genreIds: [12, 14] }, // Adventure, Fantasy
+  { id: 'thoughtful', emoji: '🤔', label: 'Thoughtful', color: 'from-indigo-500 to-blue-500', genreIds: [878, 18] }, // Sci-Fi, Drama
+  { id: 'scared', emoji: '😨', label: 'Thrilled', color: 'from-gray-700 to-black', genreIds: [27, 53] }, // Horror, Thriller
+  { id: 'nostalgic', emoji: '🥹', label: 'Nostalgic', color: 'from-amber-500 to-yellow-500', genreIds: [10751, 12] }, // Family, Adventure
 ];
-
-// Sample recommendations based on mood
-const moodRecommendations = {
-  happy: [
-    { id: 1, title: 'The Grand Budapest Hotel', genre: 'Comedy', rating: 8.1, poster: 'https://picsum.photos/seed/happy1/300/450' },
-    { id: 2, title: 'Paddington 2', genre: 'Family', rating: 8.0, poster: 'https://picsum.photos/seed/happy2/300/450' },
-    { id: 3, title: 'Amélie', genre: 'Romance', rating: 8.3, poster: 'https://picsum.photos/seed/happy3/300/450' },
-  ],
-  excited: [
-    { id: 4, title: 'Mad Max: Fury Road', genre: 'Action', rating: 8.1, poster: 'https://picsum.photos/seed/excited1/300/450' },
-    { id: 5, title: 'Top Gun: Maverick', genre: 'Action', rating: 8.3, poster: 'https://picsum.photos/seed/excited2/300/450' },
-    { id: 6, title: 'Spider-Man: No Way Home', genre: 'Action', rating: 8.2, poster: 'https://picsum.photos/seed/excited3/300/450' },
-  ],
-  relaxed: [
-    { id: 7, title: 'Chef', genre: 'Comedy', rating: 7.3, poster: 'https://picsum.photos/seed/relaxed1/300/450' },
-    { id: 8, title: 'The Secret Life of Walter Mitty', genre: 'Adventure', rating: 7.3, poster: 'https://picsum.photos/seed/relaxed2/300/450' },
-    { id: 9, title: 'About Time', genre: 'Romance', rating: 7.8, poster: 'https://picsum.photos/seed/relaxed3/300/450' },
-  ],
-  romantic: [
-    { id: 10, title: 'The Notebook', genre: 'Romance', rating: 7.8, poster: 'https://picsum.photos/seed/romantic1/300/450' },
-    { id: 11, title: 'La La Land', genre: 'Musical', rating: 8.0, poster: 'https://picsum.photos/seed/romantic2/300/450' },
-    { id: 12, title: 'Pride & Prejudice', genre: 'Romance', rating: 7.8, poster: 'https://picsum.photos/seed/romantic3/300/450' },
-  ],
-  adventurous: [
-    { id: 13, title: 'Indiana Jones', genre: 'Adventure', rating: 8.4, poster: 'https://picsum.photos/seed/adventure1/300/450' },
-    { id: 14, title: 'Jurassic Park', genre: 'Sci-Fi', rating: 8.2, poster: 'https://picsum.photos/seed/adventure2/300/450' },
-    { id: 15, title: 'The Lord of the Rings', genre: 'Fantasy', rating: 9.0, poster: 'https://picsum.photos/seed/adventure3/300/450' },
-  ],
-  thoughtful: [
-    { id: 16, title: 'Inception', genre: 'Sci-Fi', rating: 8.8, poster: 'https://picsum.photos/seed/thought1/300/450' },
-    { id: 17, title: 'Interstellar', genre: 'Sci-Fi', rating: 8.6, poster: 'https://picsum.photos/seed/thought2/300/450' },
-    { id: 18, title: 'The Shawshank Redemption', genre: 'Drama', rating: 9.3, poster: 'https://picsum.photos/seed/thought3/300/450' },
-  ],
-  scared: [
-    { id: 19, title: 'A Quiet Place', genre: 'Horror', rating: 7.5, poster: 'https://picsum.photos/seed/horror1/300/450' },
-    { id: 20, title: 'Get Out', genre: 'Horror', rating: 7.7, poster: 'https://picsum.photos/seed/horror2/300/450' },
-    { id: 21, title: 'Hereditary', genre: 'Horror', rating: 7.3, poster: 'https://picsum.photos/seed/horror3/300/450' },
-  ],
-  nostalgic: [
-    { id: 22, title: 'E.T. the Extra-Terrestrial', genre: 'Family', rating: 7.9, poster: 'https://picsum.photos/seed/nostalgia1/300/450' },
-    { id: 23, title: 'The Goonies', genre: 'Adventure', rating: 7.7, poster: 'https://picsum.photos/seed/nostalgia2/300/450' },
-    { id: 24, title: 'Back to the Future', genre: 'Sci-Fi', rating: 8.5, poster: 'https://picsum.photos/seed/nostalgia3/300/450' },
-  ],
-};
 
 function AIRecommendations() {
   const { isAuthenticated } = useAuthStore();
@@ -64,15 +21,30 @@ function AIRecommendations() {
   const [isLoading, setIsLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  const handleMoodSelect = (mood) => {
+  const handleMoodSelect = async (mood) => {
     setSelectedMood(mood);
     setIsLoading(true);
 
-    // Simulate AI processing
-    setTimeout(() => {
-      setRecommendations(moodRecommendations[mood.id] || []);
+    try {
+      // Fetch movies based on mood's genre IDs
+      const genreId = mood.genreIds[0];
+      const data = await tmdbApi.getMoviesByGenre(genreId, 1, 'vote_average.desc');
+
+      const formattedResults = (data.results || []).slice(0, 6).map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        genre: mood.label,
+        rating: movie.vote_average?.toFixed(1),
+        poster: movie.poster_path ? `https://image.tmdb.org/t/p/w300${movie.poster_path}` : null
+      }));
+
+      setRecommendations(formattedResults);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      setRecommendations([]);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const resetMood = () => {

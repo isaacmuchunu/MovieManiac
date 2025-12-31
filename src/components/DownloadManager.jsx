@@ -1,44 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { tmdbApi } from '../lib/videoProviders';
 
-// Sample downloads - in production these would be managed by Service Worker
-const sampleDownloads = [
-  {
-    id: 1,
-    title: 'Breaking Bad',
-    type: 'series',
-    episode: 'S5:E16 Felina',
-    poster: 'https://picsum.photos/seed/dl1/200/300',
-    size: '1.2 GB',
-    quality: '1080p',
-    progress: 100,
-    status: 'complete',
-    expiresIn: '7 days',
-  },
-  {
-    id: 2,
-    title: 'Wednesday',
-    type: 'series',
-    episode: 'S1:E1 Wednesday\'s Child Is Full of Woe',
-    poster: 'https://picsum.photos/seed/dl2/200/300',
-    size: '850 MB',
-    quality: '720p',
-    progress: 65,
-    status: 'downloading',
-    speed: '5.2 MB/s',
-  },
-  {
-    id: 3,
-    title: 'The Dark Knight',
-    type: 'movie',
-    poster: 'https://picsum.photos/seed/dl3/200/300',
-    size: '4.5 GB',
-    quality: '4K HDR',
-    progress: 100,
-    status: 'complete',
-    expiresIn: '14 days',
-  },
-];
+const STORAGE_KEY = 'moovie-downloads';
 
 const DownloadManager = ({ isOpen, onClose }) => {
   const [downloads, setDownloads] = useState([]);
@@ -47,8 +11,42 @@ const DownloadManager = ({ isOpen, onClose }) => {
   const [storageTotal] = useState(20);
 
   useEffect(() => {
-    setDownloads(sampleDownloads);
-  }, []);
+    const loadDownloads = async () => {
+      // Try to load from localStorage
+      const savedDownloads = localStorage.getItem(STORAGE_KEY);
+      if (savedDownloads) {
+        setDownloads(JSON.parse(savedDownloads));
+        return;
+      }
+
+      // Generate demo downloads from trending content
+      try {
+        const trending = await tmdbApi.getTrending();
+        const demoDownloads = trending.results.slice(0, 3).map((item, index) => ({
+          id: item.id,
+          title: item.title || item.name,
+          type: item.media_type === 'tv' ? 'series' : 'movie',
+          episode: item.media_type === 'tv' ? `S1:E${index + 1}` : undefined,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
+          size: item.media_type === 'tv' ? '850 MB' : '2.4 GB',
+          quality: index === 0 ? '1080p' : index === 1 ? '720p' : '4K HDR',
+          progress: index === 0 ? 100 : index === 1 ? 45 + Math.random() * 30 : 100,
+          status: index === 1 ? 'downloading' : 'complete',
+          expiresIn: index !== 1 ? `${7 + index * 3} days` : undefined,
+          speed: index === 1 ? '4.8 MB/s' : undefined
+        }));
+        setDownloads(demoDownloads);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(demoDownloads));
+      } catch (error) {
+        console.error('Error loading downloads:', error);
+        setDownloads([]);
+      }
+    };
+
+    if (isOpen) {
+      loadDownloads();
+    }
+  }, [isOpen]);
 
   // Simulate download progress
   useEffect(() => {
