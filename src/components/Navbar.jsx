@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useAuthStore, useProfileStore } from '../lib/store';
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +26,8 @@ const Navbar = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const { profiles, currentProfile } = useProfileStore();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,12 +45,18 @@ const Navbar = ({ onSearch }) => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   const navLinks = [
     { path: '/', label: 'Home' },
+    { path: '/browse', label: 'Browse' },
     { path: '/tv-shows', label: 'TV Shows' },
     { path: '/movies', label: 'Movies' },
     { path: '/new', label: 'New & Popular' },
-    { path: '/my-list', label: 'My List' },
+    { path: '/my-list', label: 'My List', requiresAuth: true },
   ];
 
   return (
@@ -66,7 +75,7 @@ const Navbar = ({ onSearch }) => {
 
           {/* Desktop Navigation */}
           <ul className="hidden lg:flex items-center gap-5">
-            {navLinks.map((link) => (
+            {navLinks.filter(link => !link.requiresAuth || isAuthenticated).map((link) => (
               <li key={link.path}>
                 <NavLink
                   to={link.path}
@@ -147,53 +156,75 @@ const Navbar = ({ onSearch }) => {
             </span>
           </button>
 
-          {/* Profile */}
-          <div className="relative group">
-            <button className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-gradient-to-br from-yellow-500 to-red-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">U</span>
-              </div>
-              <ChevronDownIcon />
-            </button>
+          {/* Profile / Auth */}
+          {isAuthenticated ? (
+            <div className="relative group">
+              <button className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded overflow-hidden">
+                  {currentProfile?.avatar ? (
+                    <img src={currentProfile.avatar} alt={currentProfile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-yellow-500 to-red-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{user?.name?.[0] || 'U'}</span>
+                    </div>
+                  )}
+                </div>
+                <ChevronDownIcon />
+              </button>
 
-            {/* Profile Dropdown */}
-            <div className="absolute right-0 top-full mt-2 w-48 bg-black/95 border border-gray-700 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <ul className="py-2">
-                <li>
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-blue-600"></div>
-                    Profile 1
-                  </button>
-                </li>
-                <li>
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-green-600"></div>
-                    Profile 2
-                  </button>
-                </li>
-                <li className="border-t border-gray-700 mt-2 pt-2">
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left">
-                    Manage Profiles
-                  </button>
-                </li>
-                <li>
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left">
-                    Account
-                  </button>
-                </li>
-                <li>
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left">
-                    Help Center
-                  </button>
-                </li>
-                <li className="border-t border-gray-700 mt-2 pt-2">
-                  <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left">
-                    Sign out of MovieMania
-                  </button>
-                </li>
-              </ul>
+              {/* Profile Dropdown */}
+              <div className="absolute right-0 top-full mt-2 w-56 bg-black/95 border border-gray-700 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <ul className="py-2">
+                  {profiles.length > 0 && profiles.slice(0, 3).map((profile) => (
+                    <li key={profile.id}>
+                      <button className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left flex items-center gap-3">
+                        <img src={profile.avatar} alt={profile.name} className="w-6 h-6 rounded object-cover" />
+                        {profile.name}
+                      </button>
+                    </li>
+                  ))}
+                  <li className="border-t border-gray-700 mt-2 pt-2">
+                    <Link to="/profiles" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white">
+                      Manage Profiles
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/history" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white">
+                      Watch History
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/my-list" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white">
+                      My List
+                    </Link>
+                  </li>
+                  <li className="border-t border-gray-700 mt-2 pt-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left"
+                    >
+                      Sign out of MovieMania
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="bg-netflix-red hover:bg-red-700 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>
