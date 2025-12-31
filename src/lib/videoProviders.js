@@ -463,6 +463,15 @@ export const tmdbApi = {
     return res.json();
   },
 
+  // Discover content by country (unified function)
+  discoverByCountry: async (countryCode, type = 'movie', page = 1) => {
+    const endpoint = type === 'tv' ? 'discover/tv' : 'discover/movie';
+    const res = await fetch(
+      `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_API_KEY}&with_origin_country=${countryCode}&page=${page}&sort_by=popularity.desc`
+    );
+    return res.json();
+  },
+
   // Get person details
   getPersonDetails: async (personId) => {
     const res = await fetch(

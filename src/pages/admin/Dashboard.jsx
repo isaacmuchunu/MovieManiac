@@ -254,11 +254,23 @@ const Dashboard = () => {
         }
 
         if (healthData) {
+          // Read real values from healthData response with sensible defaults
+          const databaseStatus = healthData.database ??
+            healthData.components?.database?.status === 'ok' ??
+            (healthData.status === 'ok' ? null : false);
+          const redisStatus = healthData.redis ??
+            healthData.components?.redis?.status === 'ok' ??
+            null;
+          const storageUsage = healthData.storage ??
+            healthData.components?.storage?.usage ??
+            healthData.storageUsage ??
+            null;
+
           setHealth({
             api: healthData.status === 'ok',
-            database: true,
-            redis: true,
-            storage: 0
+            database: databaseStatus,
+            redis: redisStatus,
+            storage: typeof storageUsage === 'number' ? storageUsage : 0
           });
         }
       } catch (err) {

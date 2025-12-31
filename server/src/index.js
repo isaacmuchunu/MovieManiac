@@ -17,10 +17,7 @@ import { setupSocketHandlers } from './services/socketService.js';
 import {
   securityHeaders,
   securityAudit,
-  sanitizeInput,
-  loginRateLimiter,
-  apiRateLimiter,
-  adminRateLimiter
+  sanitizeInput
 } from './middleware/security.js';
 
 // Routes
@@ -63,7 +60,6 @@ app.use(cors({
 
 // Security middleware
 app.use(securityHeaders);
-app.use(sanitizeInput);
 
 // Rate limiting - general API
 const limiter = rateLimit({
@@ -104,6 +100,9 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Input sanitization (must come after body parsing so req.body is available)
+app.use(sanitizeInput);
 
 // Logging
 if (process.env.NODE_ENV !== 'test') {
