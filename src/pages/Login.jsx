@@ -57,7 +57,7 @@ function Login() {
       <header className="relative z-10 px-4 md:px-16 py-6">
         <Link to="/">
           <h1 className="text-netflix-red font-bold text-3xl md:text-4xl tracking-wider">
-            MOVIEMANIA
+            <span className="text-white">M</span>OOVIE
           </h1>
         </Link>
       </header>
@@ -147,7 +147,7 @@ function Login() {
 
           <div className="mt-12 text-gray-400">
             <p>
-              New to MovieMania?{' '}
+              New to Moovie?{' '}
               <Link to="/register" className="text-white hover:underline">
                 Sign up now
               </Link>

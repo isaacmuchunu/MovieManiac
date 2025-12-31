@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../lib/store';
+import SmartSearch from './SmartSearch';
+import NotificationCenter from './NotificationCenter';
+import DownloadManager from './DownloadManager';
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,8 +25,9 @@ const ChevronDownIcon = () => (
 
 const Navbar = ({ onSearch }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showSmartSearch, setShowSmartSearch] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showDownloads, setShowDownloads] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -37,12 +41,15 @@ const Navbar = ({ onSearch }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      if (onSearch) onSearch(searchQuery);
+  const handleSearchResult = (result) => {
+    if (result.media_type === 'person') {
+      navigate(`/person/${result.id}`);
+    } else if (result.media_type === 'tv') {
+      navigate(`/series/${result.id}`);
+    } else {
+      navigate(`/movie/${result.id}`);
     }
+    setShowSmartSearch(false);
   };
 
   const handleLogout = () => {
@@ -70,7 +77,9 @@ const Navbar = ({ onSearch }) => {
         <div className="flex items-center gap-8">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <span className="text-netflix-red text-2xl md:text-3xl font-bold tracking-tight">MOVIEMANIA</span>
+            <span className="text-netflix-red text-2xl md:text-3xl font-bold tracking-tight">
+                <span className="text-white">M</span>OOVIE
+              </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -125,23 +134,32 @@ const Navbar = ({ onSearch }) => {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-1 text-white hover:text-gray-300 transition-colors"
-            >
-              <SearchIcon />
-            </button>
-            <input
-              type="text"
-              placeholder="Titles, people, genres"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`search-input ${searchOpen ? 'active' : ''}`}
-            />
-          </form>
+          {/* Smart Search */}
+          <button
+            onClick={() => setShowSmartSearch(true)}
+            className="p-1 text-white hover:text-gray-300 transition-colors"
+            aria-label="Search"
+          >
+            <SearchIcon />
+          </button>
+
+          {/* Downloads */}
+          {isAuthenticated && (
+            <div className="relative">
+              <button
+                onClick={() => setShowDownloads(!showDownloads)}
+                className="p-1 text-white hover:text-gray-300 transition-colors"
+                aria-label="Downloads"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </button>
+              {showDownloads && (
+                <DownloadManager onClose={() => setShowDownloads(false)} />
+              )}
+            </div>
+          )}
 
           {/* Kids */}
           <Link to="/kids" className="hidden md:block text-sm text-gray-300 hover:text-white transition-colors">
@@ -149,12 +167,21 @@ const Navbar = ({ onSearch }) => {
           </Link>
 
           {/* Notifications */}
-          <button className="relative p-1 text-white hover:text-gray-300 transition-colors">
-            <BellIcon />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-netflix-red text-xs rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-1 text-white hover:text-gray-300 transition-colors"
+              aria-label="Notifications"
+            >
+              <BellIcon />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-netflix-red text-xs rounded-full flex items-center justify-center">
+                3
+              </span>
+            </button>
+            {showNotifications && (
+              <NotificationCenter onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
 
           {/* Profile / Auth */}
           {isAuthenticated ? (
@@ -203,7 +230,7 @@ const Navbar = ({ onSearch }) => {
                       onClick={handleLogout}
                       className="w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white text-left"
                     >
-                      Sign out of MovieMania
+                      Sign out of Moovie
                     </button>
                   </li>
                 </ul>
@@ -227,6 +254,14 @@ const Navbar = ({ onSearch }) => {
           )}
         </div>
       </div>
+
+      {/* Smart Search Overlay */}
+      {showSmartSearch && (
+        <SmartSearch
+          onClose={() => setShowSmartSearch(false)}
+          onSelect={handleSearchResult}
+        />
+      )}
     </nav>
   );
 };

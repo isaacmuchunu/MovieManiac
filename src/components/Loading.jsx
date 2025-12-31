@@ -6,7 +6,10 @@ const Loading = () => {
         <div className="relative">
           <div className="w-16 h-16 border-4 border-netflix-medium-gray rounded-full animate-spin border-t-netflix-red"></div>
         </div>
-        <span className="text-netflix-red text-2xl font-bold tracking-wide">MOVIEMANIA</span>
+        <span className="text-2xl font-bold tracking-wide">
+          <span className="text-white">M</span>
+          <span className="text-netflix-red">OOVIE</span>
+        </span>
       </div>
     </div>
   );
