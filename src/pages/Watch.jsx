@@ -17,6 +17,7 @@ const Watch = () => {
   const [currentSeason, setCurrentSeason] = useState(parseInt(searchParams.get('s')) || 1);
   const [currentEpisode, setCurrentEpisode] = useState(parseInt(searchParams.get('e')) || 1);
   const [seasonData, setSeasonData] = useState(null);
+  const [allSeasons, setAllSeasons] = useState([]);
 
   // Fetch content details
   useEffect(() => {
@@ -31,6 +32,10 @@ const Watch = () => {
         } else if (type === 'tv') {
           const data = await tmdbApi.getTvDetails(id);
           setContent(data);
+
+          // Filter valid seasons (exclude season 0 - specials)
+          const validSeasons = (data.seasons || []).filter(s => s.season_number > 0);
+          setAllSeasons(validSeasons);
 
           // Fetch season details
           const season = await tmdbApi.getTvSeasonDetails(id, currentSeason);
@@ -112,15 +117,37 @@ const Watch = () => {
     }
   };
 
-  const goToPreviousEpisode = () => {
+  const goToPreviousEpisode = async () => {
     if (currentEpisode > 1) {
       setCurrentEpisode(currentEpisode - 1);
     } else if (currentSeason > 1) {
       // Go to last episode of previous season
-      setCurrentSeason(currentSeason - 1);
-      // Will need to fetch previous season data to know the last episode
-      setCurrentEpisode(1); // Fallback to episode 1
+      try {
+        const prevSeasonData = await tmdbApi.getTvSeasonDetails(id, currentSeason - 1);
+        setCurrentSeason(currentSeason - 1);
+        setCurrentEpisode(prevSeasonData.episodes?.length || 1);
+      } catch (err) {
+        console.error('Error fetching previous season:', err);
+        setCurrentSeason(currentSeason - 1);
+        setCurrentEpisode(1);
+      }
     }
+  };
+
+  // Handle season change from video player
+  const handleSeasonChange = async (seasonNum) => {
+    try {
+      const season = await tmdbApi.getTvSeasonDetails(id, seasonNum);
+      setSeasonData(season);
+    } catch (err) {
+      console.error('Failed to fetch season data:', err);
+    }
+  };
+
+  // Handle episode change from video player
+  const handleEpisodeChange = (seasonNum, episodeNum) => {
+    setCurrentSeason(seasonNum);
+    setCurrentEpisode(episodeNum);
   };
 
   const getTitle = () => {
@@ -167,6 +194,10 @@ const Watch = () => {
       onPreviousEpisode={goToPreviousEpisode}
       hasNextEpisode={hasNextEpisode()}
       hasPreviousEpisode={hasPreviousEpisode()}
+      seasonData={seasonData}
+      allSeasons={allSeasons}
+      onSeasonChange={handleSeasonChange}
+      onEpisodeChange={handleEpisodeChange}
     />
   );
 };

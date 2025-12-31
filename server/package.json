@@ -1,5 +1,5 @@
 {
-  "name": "moviemania-server",
+  "name": "moovie-server",
   "version": "1.0.0",
   "description": "Enterprise-grade streaming platform backend",
   "main": "src/index.js",
