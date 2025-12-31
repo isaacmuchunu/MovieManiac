@@ -1,15 +1,18 @@
 // Video Provider Service - Multi-server streaming support
-// Aggregates multiple embed sources for movies and TV shows
+// Aggregates 20+ embed sources for movies and TV shows
 
 const TMDB_API_KEY = '617c0260598c225e728db47b98d5ea6f';
 
 // Server configurations with embed URL generators
 export const videoServers = [
+  // Primary Servers (Most Reliable)
   {
     id: 'vidsrc',
     name: 'VidSrc',
     logo: '🎬',
     quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://vidsrc.xyz/embed/movie/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`,
   },
@@ -18,6 +21,8 @@ export const videoServers = [
     name: 'VidSrc Pro',
     logo: '🎥',
     quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
   },
@@ -26,22 +31,62 @@ export const videoServers = [
     name: 'VidSrc TV',
     logo: '📺',
     quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://vidsrc.to/embed/movie/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`,
   },
   {
+    id: 'vidsrc-cc',
+    name: 'VidSrc CC',
+    logo: '🎯',
+    quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
+    getMovieUrl: (tmdbId) => `https://vidsrc.cc/v2/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+
+  // High Quality Servers
+  {
     id: 'embedsu',
     name: 'EmbedSu',
     logo: '🌐',
-    quality: 'HD',
+    quality: 'FHD',
+    region: 'Europe',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://embed.su/embed/movie/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`,
   },
+  {
+    id: 'smashystream',
+    name: 'SmashyStream',
+    logo: '💥',
+    quality: 'FHD',
+    region: 'Global',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://player.smashy.stream/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://player.smashy.stream/tv/${tmdbId}?s=${season}&e=${episode}`,
+  },
+  {
+    id: 'frembed',
+    name: 'Frembed',
+    logo: '🌟',
+    quality: 'FHD',
+    region: 'Europe',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://frembed.pro/api/film.php?id=${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://frembed.pro/api/serie.php?id=${tmdbId}&sa=${season}&epi=${episode}`,
+  },
+
+  // Multi-source Servers
   {
     id: 'multiembed',
     name: 'MultiEmbed',
     logo: '🔗',
     quality: 'HD',
+    region: 'Global',
+    speed: 'medium',
     getMovieUrl: (tmdbId) => `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
     getTvUrl: (tmdbId, season, episode) => `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`,
   },
@@ -50,6 +95,8 @@ export const videoServers = [
     name: 'AutoEmbed',
     logo: '⚡',
     quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://autoembed.co/movie/tmdb/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}`,
   },
@@ -58,64 +105,136 @@ export const videoServers = [
     name: '2Embed',
     logo: '🎞️',
     quality: 'HD',
+    region: 'North America',
+    speed: 'medium',
     getMovieUrl: (tmdbId) => `https://www.2embed.cc/embed/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`,
   },
-  {
-    id: 'smashystream',
-    name: 'SmashyStream',
-    logo: '💥',
-    quality: 'FHD',
-    getMovieUrl: (tmdbId) => `https://player.smashy.stream/movie/${tmdbId}`,
-    getTvUrl: (tmdbId, season, episode) => `https://player.smashy.stream/tv/${tmdbId}?s=${season}&e=${episode}`,
-  },
+
+  // API-based Servers
   {
     id: 'moviesapi',
     name: 'MoviesAPI',
     logo: '🍿',
     quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
     getMovieUrl: (tmdbId) => `https://moviesapi.club/movie/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`,
-  },
-  {
-    id: 'filmxy',
-    name: 'FilmXY',
-    logo: '📽️',
-    quality: 'HD',
-    getMovieUrl: (tmdbId) => `https://filmxy.vip/embed/${tmdbId}`,
-    getTvUrl: (tmdbId, season, episode) => `https://filmxy.vip/embed/${tmdbId}/${season}/${episode}`,
-  },
-  {
-    id: 'superembed',
-    name: 'SuperEmbed',
-    logo: '🚀',
-    quality: 'HD',
-    getMovieUrl: (tmdbId) => `https://superembed.stream/movie/${tmdbId}`,
-    getTvUrl: (tmdbId, season, episode) => `https://superembed.stream/tv/${tmdbId}/${season}/${episode}`,
-  },
-  {
-    id: 'nontongo',
-    name: 'NontonGo',
-    logo: '🎭',
-    quality: 'HD',
-    getMovieUrl: (tmdbId) => `https://nontongo.win/embed/movie/${tmdbId}`,
-    getTvUrl: (tmdbId, season, episode) => `https://nontongo.win/embed/tv/${tmdbId}/${season}/${episode}`,
   },
   {
     id: 'movie-api',
     name: 'MovieAPI',
     logo: '🎦',
     quality: 'HD',
+    region: 'Global',
+    speed: 'medium',
     getMovieUrl: (tmdbId) => `https://movieapi.club/movie/${tmdbId}`,
     getTvUrl: (tmdbId, season, episode) => `https://movieapi.club/tv/${tmdbId}/${season}/${episode}`,
   },
+
+  // Regional Servers
   {
-    id: 'frembed',
-    name: 'Frembed',
-    logo: '🌟',
+    id: 'filmxy',
+    name: 'FilmXY',
+    logo: '📽️',
+    quality: 'HD',
+    region: 'Asia',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://filmxy.vip/embed/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://filmxy.vip/embed/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'nontongo',
+    name: 'NontonGo',
+    logo: '🎭',
+    quality: 'HD',
+    region: 'Asia',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://nontongo.win/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://nontongo.win/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+
+  // Backup Servers
+  {
+    id: 'superembed',
+    name: 'SuperEmbed',
+    logo: '🚀',
+    quality: 'HD',
+    region: 'Global',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://superembed.stream/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://superembed.stream/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'embedflix',
+    name: 'EmbedFlix',
+    logo: '🎪',
+    quality: 'HD',
+    region: 'Europe',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://embedflix.net/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://embedflix.net/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'primewire',
+    name: 'PrimeWire',
+    logo: '⭐',
+    quality: 'HD',
+    region: 'Global',
+    speed: 'slow',
+    getMovieUrl: (tmdbId) => `https://primewire.tf/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://primewire.tf/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'streamlord',
+    name: 'StreamLord',
+    logo: '👑',
+    quality: 'HD',
+    region: 'Europe',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://streamlord.to/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://streamlord.to/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'vidzstore',
+    name: 'VidZStore',
+    logo: '🏪',
+    quality: 'HD',
+    region: 'Asia',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://vidzstore.com/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://vidzstore.com/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'gomo',
+    name: 'GoMo',
+    logo: '🏃',
+    quality: 'HD',
+    region: 'Global',
+    speed: 'fast',
+    getMovieUrl: (tmdbId) => `https://gomo.to/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://gomo.to/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'cinezone',
+    name: 'CineZone',
+    logo: '🎬',
     quality: 'FHD',
-    getMovieUrl: (tmdbId) => `https://frembed.pro/api/film.php?id=${tmdbId}`,
-    getTvUrl: (tmdbId, season, episode) => `https://frembed.pro/api/serie.php?id=${tmdbId}&sa=${season}&epi=${episode}`,
+    region: 'North America',
+    speed: 'fast',
+    getMovieUrl: (tmdbId) => `https://cinezone.to/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://cinezone.to/embed/tv/${tmdbId}/${season}/${episode}`,
+  },
+  {
+    id: 'flixhq',
+    name: 'FlixHQ',
+    logo: '🎯',
+    quality: 'HD',
+    region: 'Global',
+    speed: 'medium',
+    getMovieUrl: (tmdbId) => `https://flixhq.to/embed/movie/${tmdbId}`,
+    getTvUrl: (tmdbId, season, episode) => `https://flixhq.to/embed/tv/${tmdbId}/${season}/${episode}`,
   },
 ];
 
@@ -129,6 +248,21 @@ export const getMovieStreamUrl = (tmdbId, serverId = 'vidsrc') => {
 export const getTvStreamUrl = (tmdbId, season, episode, serverId = 'vidsrc') => {
   const server = videoServers.find(s => s.id === serverId) || videoServers[0];
   return server.getTvUrl(tmdbId, season, episode);
+};
+
+// Filter servers by quality
+export const getServersByQuality = (quality) => {
+  return videoServers.filter(s => s.quality === quality);
+};
+
+// Filter servers by region
+export const getServersByRegion = (region) => {
+  return videoServers.filter(s => s.region === region || s.region === 'Global');
+};
+
+// Get fast servers
+export const getFastServers = () => {
+  return videoServers.filter(s => s.speed === 'fast');
 };
 
 // TMDB API functions for real data
@@ -200,10 +334,18 @@ export const tmdbApi = {
     return res.json();
   },
 
+  // Fetch on the air TV shows
+  getOnTheAirTvShows: async (page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/on_the_air?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+    return res.json();
+  },
+
   // Fetch movie details
   getMovieDetails: async (movieId) => {
     const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar,recommendations,external_ids`
+      `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar,recommendations,external_ids,reviews,keywords`
     );
     return res.json();
   },
@@ -211,7 +353,7 @@ export const tmdbApi = {
   // Fetch TV show details
   getTvDetails: async (tvId) => {
     const res = await fetch(
-      `https://api.themoviedb.org/3/tv/${tvId}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar,recommendations,external_ids`
+      `https://api.themoviedb.org/3/tv/${tvId}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar,recommendations,external_ids,reviews,keywords,content_ratings`
     );
     return res.json();
   },
@@ -227,7 +369,7 @@ export const tmdbApi = {
   // Fetch TV episode details
   getTvEpisodeDetails: async (tvId, seasonNumber, episodeNumber) => {
     const res = await fetch(
-      `https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=${TMDB_API_KEY}`
+      `https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos`
     );
     return res.json();
   },
@@ -252,6 +394,14 @@ export const tmdbApi = {
   searchTvShows: async (query, page = 1) => {
     const res = await fetch(
       `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`
+    );
+    return res.json();
+  },
+
+  // Search person
+  searchPerson: async (query, page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`
     );
     return res.json();
   },
@@ -289,17 +439,26 @@ export const tmdbApi = {
   },
 
   // Get movies by genre
-  getMoviesByGenre: async (genreId, page = 1) => {
+  getMoviesByGenre: async (genreId, page = 1, sortBy = 'popularity.desc') => {
     const res = await fetch(
-      `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&sort_by=popularity.desc`
+      `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&sort_by=${sortBy}`
     );
     return res.json();
   },
 
   // Get TV shows by genre
-  getTvShowsByGenre: async (genreId, page = 1) => {
+  getTvShowsByGenre: async (genreId, page = 1, sortBy = 'popularity.desc') => {
     const res = await fetch(
-      `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&sort_by=popularity.desc`
+      `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&sort_by=${sortBy}`
+    );
+    return res.json();
+  },
+
+  // Discover content by genre (unified function)
+  discoverByGenre: async (genreId, type = 'movie', page = 1) => {
+    const endpoint = type === 'tv' ? 'discover/tv' : 'discover/movie';
+    const res = await fetch(
+      `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&sort_by=popularity.desc`
     );
     return res.json();
   },
@@ -336,6 +495,62 @@ export const tmdbApi = {
     return res.json();
   },
 
+  // Get movie external IDs
+  getMovieExternalIds: async (movieId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/external_ids?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get TV external IDs
+  getTvExternalIds: async (tvId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/external_ids?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get movie images
+  getMovieImages: async (movieId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/images?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get TV images
+  getTvImages: async (tvId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/images?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get configuration
+  getConfiguration: async () => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/configuration?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get countries list
+  getCountries: async () => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/configuration/countries?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
+  // Get languages list
+  getLanguages: async () => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/configuration/languages?api_key=${TMDB_API_KEY}`
+    );
+    return res.json();
+  },
+
   // Get image URL helper
   getImageUrl: (path, size = 'original') => {
     if (!path) return null;
@@ -353,7 +568,7 @@ export const checkServerAvailability = async (serverId, tmdbId) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(url, {
+    await fetch(url, {
       method: 'HEAD',
       mode: 'no-cors',
       signal: controller.signal
@@ -373,11 +588,27 @@ export const getNextServer = (currentServerId) => {
   return videoServers[nextIndex];
 };
 
+// Get server by ID
+export const getServerById = (serverId) => {
+  return videoServers.find(s => s.id === serverId);
+};
+
+// Get random server from a quality tier
+export const getRandomServer = (quality = null) => {
+  const servers = quality ? getServersByQuality(quality) : videoServers;
+  return servers[Math.floor(Math.random() * servers.length)];
+};
+
 export default {
   videoServers,
   getMovieStreamUrl,
   getTvStreamUrl,
+  getServersByQuality,
+  getServersByRegion,
+  getFastServers,
   tmdbApi,
   checkServerAvailability,
-  getNextServer
+  getNextServer,
+  getServerById,
+  getRandomServer
 };
