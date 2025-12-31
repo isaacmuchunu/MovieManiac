@@ -3,6 +3,8 @@ import Hero from '../components/Hero';
 import MovieRow from '../components/MovieRow';
 import TopTenRow from '../components/TopTenRow';
 import MovieModal from '../components/MovieModal';
+import AIRecommendations from '../components/AIRecommendations';
+import WatchParty from '../components/WatchParty';
 
 const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 
@@ -53,10 +55,15 @@ const Home = () => {
 
         {/* Top 10 Movies */}
         <TopTenRow
-          title="Movies Today"
+          title="Top 10 Movies Today"
           movies={trendingMovies}
           onMovieClick={handleMovieClick}
         />
+
+        {/* AI Recommendations Section */}
+        <div className="px-4 md:px-12 py-6">
+          <AIRecommendations />
+        </div>
 
         {/* Top Rated */}
         <MovieRow
@@ -72,6 +79,11 @@ const Home = () => {
           onMovieClick={handleMovieClick}
         />
 
+        {/* Watch Party Section */}
+        <div className="px-4 md:px-12 py-6">
+          <WatchParty />
+        </div>
+
         {/* Now Playing */}
         <MovieRow
           title="Now Playing"
@@ -83,6 +95,13 @@ const Home = () => {
         <MovieRow
           title="Coming Soon"
           type="upcoming"
+          onMovieClick={handleMovieClick}
+        />
+
+        {/* Top 10 TV Shows */}
+        <TopTenRow
+          title="Top 10 TV Shows Today"
+          movies={trendingMovies}
           onMovieClick={handleMovieClick}
         />
 
