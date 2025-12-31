@@ -45,7 +45,7 @@ const Home = () => {
       <Hero onMoreInfo={handleMovieClick} />
 
       {/* Movie Rows - positioned to overlap hero */}
-      <div className="relative -mt-32 z-10 space-y-2">
+      <div className="relative -mt-32 z-10 space-y-8 pb-16">
         {/* Trending Now */}
         <MovieRow
           title="Trending Now"
@@ -61,7 +61,7 @@ const Home = () => {
         />
 
         {/* AI Recommendations Section */}
-        <div className="px-4 md:px-12 py-6">
+        <div className="px-4 md:px-14 py-8">
           <AIRecommendations />
         </div>
 
@@ -74,13 +74,13 @@ const Home = () => {
 
         {/* Popular */}
         <MovieRow
-          title="Popular on MovieMania"
+          title="Popular on Moovie"
           type="popular"
           onMovieClick={handleMovieClick}
         />
 
         {/* Watch Party Section */}
-        <div className="px-4 md:px-12 py-6">
+        <div className="px-4 md:px-14 py-8">
           <WatchParty />
         </div>
 

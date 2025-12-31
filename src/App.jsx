@@ -16,6 +16,7 @@ import Browse from "./pages/Browse";
 import Series from "./pages/Series";
 import WatchHistory from "./pages/WatchHistory";
 import Profiles from "./pages/Profiles";
+import Kids from "./pages/Kids";
 
 // Admin imports
 import AdminLayout from "./components/admin/AdminLayout";
@@ -86,7 +87,7 @@ function App() {
               } />
               <Route path="/search" element={<Search />} />
               <Route path="/movie/:movieId" element={<MovieDetail />} />
-              <Route path="/kids" element={<Home />} />
+              <Route path="/kids" element={<Kids />} />
               <Route path="/browse-by-language" element={<Browse />} />
             </Routes>
             <Footer />

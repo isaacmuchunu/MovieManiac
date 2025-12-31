@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
@@ -17,6 +17,7 @@ const InfoIcon = () => (
 );
 
 const Hero = ({ onMoreInfo }) => {
+  const navigate = useNavigate();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,13 +101,16 @@ const Hero = ({ onMoreInfo }) => {
         </p>
 
         {/* Buttons */}
-        <div className="flex items-center gap-3">
-          <button className="btn-netflix text-lg py-3 px-8">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(`/watch/movie/${movie.id}`)}
+            className="btn-netflix text-lg py-3 px-8 hover:scale-105 transition-transform"
+          >
             <PlayIcon />
             Play
           </button>
           <button
-            className="btn-netflix-outline text-lg py-3 px-6"
+            className="btn-netflix-outline text-lg py-3 px-6 hover:scale-105 transition-transform"
             onClick={() => onMoreInfo && onMoreInfo(movie)}
           >
             <InfoIcon />
