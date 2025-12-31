@@ -342,7 +342,7 @@ function Browse() {
     setSearchParams({});
   };
 
-  const years = Array.from({ length: 30 }, (_, i) => 2025 - i);
+  const years = Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i);
 
   const hasActiveFilters = selectedType !== 'all' || selectedCountry || selectedRating !== 'all' || selectedYear;
 

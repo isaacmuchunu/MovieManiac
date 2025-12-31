@@ -203,6 +203,25 @@ const CustomVideoPlayer = ({
     };
   }, []);
 
+  // Caption track toggling - programmatically enable/disable captions
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !video.textTracks) return;
+
+    const textTracks = video.textTracks;
+    for (let i = 0; i < textTracks.length; i++) {
+      const track = textTracks[i];
+      if (showCaptions && selectedCaption !== null && i === selectedCaption) {
+        track.mode = 'showing';
+      } else if (showCaptions && selectedCaption === null && i === 0) {
+        // Default to first track if no specific caption selected
+        track.mode = 'showing';
+      } else {
+        track.mode = 'hidden';
+      }
+    }
+  }, [showCaptions, selectedCaption]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -515,7 +534,7 @@ const CustomVideoPlayer = ({
                   )}
                 </button>
                 <div
-                  className="w-20 h-1 bg-gray-600 rounded-full cursor-pointer hidden group-hover/volume:block"
+                  className="w-20 h-1 bg-gray-600 rounded-full cursor-pointer transition-opacity opacity-100 md:opacity-0 md:group-hover/volume:opacity-100"
                   onClick={handleVolumeBarClick}
                 >
                   <div

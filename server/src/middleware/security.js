@@ -80,7 +80,12 @@ export const destroyAllUserSessions = async (userId) => {
 };
 
 // URL Hashing for content IDs
-const URL_HASH_SECRET = process.env.URL_HASH_SECRET || 'moovie-secure-url-hash-key';
+// SECURITY: URL_HASH_SECRET must be set via environment variable - no hardcoded fallback
+const URL_HASH_SECRET = process.env.URL_HASH_SECRET;
+if (!URL_HASH_SECRET) {
+  logger.error('CRITICAL: URL_HASH_SECRET environment variable is not set. Server cannot start securely.');
+  throw new Error('URL_HASH_SECRET environment variable is required. Please set it in your .env file or environment.');
+}
 
 export const hashContentId = (id, type = 'content') => {
   const data = `${type}:${id}:${URL_HASH_SECRET}`;
