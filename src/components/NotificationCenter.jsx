@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { notificationsApi } from '../lib/backendApi';
 import { tmdbApi } from '../lib/videoProviders';
 
-const NotificationCenter = ({ isOpen, onClose }) => {
+const NotificationCenter = ({ onClose }) => {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
 
@@ -41,10 +41,8 @@ const NotificationCenter = ({ isOpen, onClose }) => {
       }
     };
 
-    if (isOpen) {
-      fetchNotifications();
-    }
-  }, [isOpen]);
+    fetchNotifications();
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -123,8 +121,6 @@ const NotificationCenter = ({ isOpen, onClose }) => {
         );
     }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="absolute right-0 top-full mt-2 w-96 bg-black/95 border border-gray-800 rounded-lg shadow-2xl overflow-hidden z-50">
