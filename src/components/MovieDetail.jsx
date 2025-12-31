@@ -185,7 +185,10 @@ const MovieDetail = () => {
 
           {/* Buttons */}
           <div className="flex items-center gap-3 mb-6">
-            <button className="btn-netflix text-lg py-3 px-8">
+            <button
+              onClick={() => navigate(`/watch/movie/${movie.id}`)}
+              className="btn-netflix text-lg py-3 px-8"
+            >
               <PlayIcon />
               Play
             </button>
