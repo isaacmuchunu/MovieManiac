@@ -81,7 +81,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <p className="text-xs text-gray-600">
-          &copy; {new Date().getFullYear()} MovieMania. A Netflix-style streaming experience.
+          &copy; {new Date().getFullYear()} Moovie. The future of streaming.
         </p>
         <p className="text-xs text-gray-600 mt-2">
           Powered by TMDB API. For educational purposes only.

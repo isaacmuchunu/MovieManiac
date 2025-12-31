@@ -8,7 +8,7 @@ const MyList = () => {
 
   useEffect(() => {
     // Load from localStorage
-    const savedList = localStorage.getItem('moviemania-mylist');
+    const savedList = localStorage.getItem('moovie-mylist');
     if (savedList) {
       setMyList(JSON.parse(savedList));
     }
@@ -21,7 +21,7 @@ const MyList = () => {
   const removeFromList = (movieId) => {
     const newList = myList.filter(m => m.id !== movieId);
     setMyList(newList);
-    localStorage.setItem('moviemania-mylist', JSON.stringify(newList));
+    localStorage.setItem('moovie-mylist', JSON.stringify(newList));
   };
 
   return (

@@ -153,7 +153,7 @@ function Profiles() {
           }}
           className="mt-8 text-gray-500 hover:text-white text-sm transition-colors"
         >
-          Sign out of MovieMania
+          Sign out of Moovie
         </button>
       </div>
 

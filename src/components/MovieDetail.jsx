@@ -69,7 +69,7 @@ const MovieDetail = () => {
         setSimilar(similarData.results?.slice(0, 20) || []);
 
         // Check if in my list
-        const savedList = localStorage.getItem('moviemania-mylist');
+        const savedList = localStorage.getItem('moovie-mylist');
         if (savedList) {
           const list = JSON.parse(savedList);
           setInMyList(list.some(m => m.id === movieData.id));
@@ -86,7 +86,7 @@ const MovieDetail = () => {
   }, [movieId]);
 
   const toggleMyList = () => {
-    const savedList = localStorage.getItem('moviemania-mylist');
+    const savedList = localStorage.getItem('moovie-mylist');
     let list = savedList ? JSON.parse(savedList) : [];
 
     if (inMyList) {
@@ -95,7 +95,7 @@ const MovieDetail = () => {
       list.push(movie);
     }
 
-    localStorage.setItem('moviemania-mylist', JSON.stringify(list));
+    localStorage.setItem('moovie-mylist', JSON.stringify(list));
     setInMyList(!inMyList);
   };
 

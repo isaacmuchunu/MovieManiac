@@ -106,7 +106,7 @@ function Register() {
       <header className="relative z-10 px-4 md:px-16 py-6 flex items-center justify-between">
         <Link to="/">
           <h1 className="text-netflix-red font-bold text-3xl md:text-4xl tracking-wider">
-            MOVIEMANIA
+            <span className="text-white">M</span>OOVIE
           </h1>
         </Link>
         <Link
@@ -339,7 +339,7 @@ function Register() {
                         className="w-5 h-5 mt-0.5 accent-netflix-red"
                       />
                       <span className="text-gray-300 text-sm">
-                        Yes, I want to receive special offers and updates from MovieMania
+                        Yes, I want to receive special offers and updates from Moovie
                       </span>
                     </label>
                   </div>
