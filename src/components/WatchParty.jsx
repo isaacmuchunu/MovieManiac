@@ -3,6 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { tmdbApi } from '../lib/videoProviders';
 
+/**
+ * Render the Watch Party UI that lets users create or join synchronized viewing sessions.
+ *
+ * Renders controls and informational UI for creating a watch party, joining with a party code,
+ * and a modal to select popular TV shows for parties. On mount it fetches a small list of popular
+ * TV shows for the "Popular for Parties" selection. Authenticated users can open the create modal,
+ * select content, and start a party which navigates to the watch route with a generated 6-character
+ * party code. Unauthenticated users are redirected to the login page when attempting to create a party.
+ * Joining a party validates the entered 6-character code and navigates to the watch route with the provided code.
+ *
+ * @returns {JSX.Element} The Watch Party component UI.
+ */
 function WatchParty() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();

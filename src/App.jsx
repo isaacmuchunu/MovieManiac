@@ -24,6 +24,16 @@ import ContentManagement from "./pages/admin/ContentManagement";
 import UserManagement from "./pages/admin/UserManagement";
 import Analytics from "./pages/admin/Analytics";
 
+/**
+ * Root application component that configures top-level routes and layouts.
+ *
+ * Sets up authentication routes (no global nav/footer), a watch route (no global nav/footer),
+ * an admin section using its own layout and nested admin routes, and the main site routes
+ * wrapped with the global Navbar and Footer. Several main routes are protected and require
+ * authentication.
+ *
+ * @returns {JSX.Element} The root JSX element that renders the application's route tree and layouts.
+ */
 function App() {
   return (
     <div className="bg-netflix-black min-h-screen">
