@@ -160,7 +160,6 @@ model Content {
   @@index([isPublished])
   @@index([imdbRating])
   @@index([releaseDate])
-  @@fulltext([title, description])
 }
 
 model Genre {
