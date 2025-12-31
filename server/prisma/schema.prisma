@@ -20,13 +20,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  profiles      Profile[]
-  subscription  Subscription?
-  watchHistory  WatchHistory[]
-  watchlist     Watchlist[]
-  ratings       Rating[]
-  reviews       Review[]
-  refreshTokens RefreshToken[]
+  profiles                Profile[]
+  subscription            Subscription?
+  watchHistory            WatchHistory[]
+  watchlist               Watchlist[]
+  ratings                 Rating[]
+  reviews                 Review[]
+  refreshTokens           RefreshToken[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreferences?
 
   @@index([email])
 }
@@ -153,6 +155,7 @@ model Content {
   ratings         Rating[]
   reviews         Review[]
   keywords        ContentKeyword[]
+  notifications   Notification[]
 
   @@index([type])
   @@index([featured])
@@ -422,6 +425,39 @@ model Review {
   @@index([contentId])
 }
 
+// Notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  image     String?
+  link      String?
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreferences {
+  id                 String  @id @default(uuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newReleases        Boolean @default(true)
+  recommendations    Boolean @default(true)
+  watchReminders     Boolean @default(true)
+  accountAlerts      Boolean @default(true)
+  marketing          Boolean @default(false)
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+}
+
 // Enums
 enum Role {
   USER
@@ -487,4 +523,15 @@ enum Quality {
   HD_720
   FHD_1080
   UHD_4K
+}
+
+enum NotificationType {
+  NEW_RELEASE
+  RECOMMENDATION
+  CONTINUE_WATCHING
+  DOWNLOAD_COMPLETE
+  SOCIAL
+  ACCOUNT
+  SUBSCRIPTION
+  SYSTEM
 }

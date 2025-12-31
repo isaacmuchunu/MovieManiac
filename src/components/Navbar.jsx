@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../lib/store';
 import SmartSearch from './SmartSearch';
 import NotificationCenter from './NotificationCenter';
 import DownloadManager from './DownloadManager';
+import { COUNTRIES } from '../pages/Browse';
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,6 +23,70 @@ const ChevronDownIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
+
+const GlobeIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+// Country Dropdown Component
+const CountryDropdown = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCountrySelect = (country) => {
+    navigate(`/browse?country=${country.code}`);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-1 text-sm transition-colors duration-300 ${
+          isOpen ? 'text-white' : 'text-gray-300 hover:text-gray-100'
+        }`}
+      >
+        <GlobeIcon />
+        <span className="hidden md:inline">Country</span>
+        <ChevronDownIcon />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[500px] max-w-[95vw]">
+          <div className="mb-3 pb-2 border-b border-gray-700">
+            <h3 className="text-white font-semibold">Browse by Country</h3>
+            <p className="text-gray-400 text-sm">Select a country to see movies and shows from that region</p>
+          </div>
+          <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+            {COUNTRIES.map((country) => (
+              <button
+                key={country.code}
+                onClick={() => handleCountrySelect(country)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 hover:scale-105 text-gray-300 hover:text-white"
+              >
+                <span className="text-lg">{country.flag}</span>
+                <span className="text-sm truncate">{country.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Navbar = ({ onSearch }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -78,8 +143,8 @@ const Navbar = ({ onSearch }) => {
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
             <span className="text-netflix-red text-2xl md:text-3xl font-bold tracking-tight">
-                <span className="text-white">M</span>OOVIE
-              </span>
+              <span className="text-white">M</span>OOVIE
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -100,6 +165,10 @@ const Navbar = ({ onSearch }) => {
                 </NavLink>
               </li>
             ))}
+            {/* Country Dropdown in Nav */}
+            <li>
+              <CountryDropdown />
+            </li>
           </ul>
 
           {/* Mobile Menu Button */}
@@ -126,6 +195,22 @@ const Navbar = ({ onSearch }) => {
                       </NavLink>
                     </li>
                   ))}
+                  <li className="border-t border-gray-700 mt-2 pt-2">
+                    <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Browse by Country</span>
+                    <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                      {COUNTRIES.slice(0, 8).map((country) => (
+                        <Link
+                          key={country.code}
+                          to={`/browse?country=${country.code}`}
+                          className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded"
+                          onClick={() => setShowMobileMenu(false)}
+                        >
+                          <span>{country.flag}</span>
+                          <span className="truncate">{country.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </li>
                 </ul>
               </div>
             )}

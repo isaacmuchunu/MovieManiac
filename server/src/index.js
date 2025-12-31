@@ -14,6 +14,14 @@ import { fileURLToPath } from 'url';
 import { logger } from './utils/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { setupSocketHandlers } from './services/socketService.js';
+import {
+  securityHeaders,
+  securityAudit,
+  sanitizeInput,
+  loginRateLimiter,
+  apiRateLimiter,
+  adminRateLimiter
+} from './middleware/security.js';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -23,6 +31,7 @@ import streamRoutes from './routes/stream.js';
 import subscriptionRoutes from './routes/subscription.js';
 import adminRoutes from './routes/admin.js';
 import searchRoutes from './routes/search.js';
+import notificationRoutes from './routes/notifications.js';
 
 dotenv.config();
 
@@ -52,22 +61,41 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
+// Security middleware
+app.use(securityHeaders);
+app.use(sanitizeInput);
+
+// Rate limiting - general API
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
   message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/', limiter);
 
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // limit each IP to 20 login attempts per hour
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 login attempts per 15 minutes
   message: { error: 'Too many login attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+
+// Admin rate limiting
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // limit each IP to 60 admin requests per minute
+  message: { error: 'Too many admin requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/admin/', adminLimiter);
 
 // Compression
 app.use(compression());
@@ -111,6 +139,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Security audit for admin routes
+app.use('/api/admin', securityAudit);
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -119,6 +150,7 @@ app.use('/api/stream', streamRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Socket handlers
 setupSocketHandlers(io);
