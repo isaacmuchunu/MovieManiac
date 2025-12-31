@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import Loading from '../components/Loading';
 import { tmdbApi } from '../lib/videoProviders';
@@ -26,6 +26,7 @@ const TMDB_GENRE_IDS = {
   western: 37,
 };
 
+// 36 genres for 4x9 grid
 const GENRES = [
   { name: 'Action', slug: 'action', icon: '💥' },
   { name: 'Adventure', slug: 'adventure', icon: '🗺️' },
@@ -47,10 +48,26 @@ const GENRES = [
   { name: 'War', slug: 'war', icon: '⚔️' },
   { name: 'Western', slug: 'western', icon: '🤠' },
   { name: 'Anime', slug: 'anime', icon: '🎌' },
-  { name: 'Kungfu', slug: 'kungfu', icon: '🥋' },
+  { name: 'Martial Arts', slug: 'martial-arts', icon: '🥋' },
+  { name: 'Sports', slug: 'sports', icon: '⚽' },
+  { name: 'Superhero', slug: 'superhero', icon: '🦸' },
+  { name: 'Supernatural', slug: 'supernatural', icon: '👁️' },
+  { name: 'Teen', slug: 'teen', icon: '🎒' },
+  { name: 'Noir', slug: 'noir', icon: '🌙' },
+  { name: 'Disaster', slug: 'disaster', icon: '🌋' },
+  { name: 'Spy', slug: 'spy', icon: '🕶️' },
+  { name: 'Heist', slug: 'heist', icon: '💰' },
+  { name: 'Zombie', slug: 'zombie', icon: '🧟' },
+  { name: 'Psychological', slug: 'psychological', icon: '🧠' },
+  { name: 'Romantic Comedy', slug: 'rom-com', icon: '💝' },
+  { name: 'Dark Comedy', slug: 'dark-comedy', icon: '🖤' },
+  { name: 'Slice of Life', slug: 'slice-of-life', icon: '☕' },
+  { name: 'Epic', slug: 'epic', icon: '⚔️' },
+  { name: 'Cult Classic', slug: 'cult', icon: '🎪' },
 ];
 
-const COUNTRIES = [
+// 36 countries for 4x9 grid
+export const COUNTRIES = [
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
   { code: 'FR', name: 'France', flag: '🇫🇷' },
@@ -67,6 +84,26 @@ const COUNTRIES = [
   { code: 'CA', name: 'Canada', flag: '🇨🇦' },
   { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
   { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: 'RU', name: 'Russia', flag: '🇷🇺' },
+  { code: 'SE', name: 'Sweden', flag: '🇸🇪' },
+  { code: 'DK', name: 'Denmark', flag: '🇩🇰' },
+  { code: 'NO', name: 'Norway', flag: '🇳🇴' },
+  { code: 'FI', name: 'Finland', flag: '🇫🇮' },
+  { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
+  { code: 'BE', name: 'Belgium', flag: '🇧🇪' },
+  { code: 'PL', name: 'Poland', flag: '🇵🇱' },
+  { code: 'AR', name: 'Argentina', flag: '🇦🇷' },
+  { code: 'CL', name: 'Chile', flag: '🇨🇱' },
+  { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
+  { code: 'TR', name: 'Turkey', flag: '🇹🇷' },
+  { code: 'EG', name: 'Egypt', flag: '🇪🇬' },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
+  { code: 'ID', name: 'Indonesia', flag: '🇮🇩' },
+  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
+  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+  { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+  { code: 'HK', name: 'Hong Kong', flag: '🇭🇰' },
+  { code: 'TW', name: 'Taiwan', flag: '🇹🇼' },
 ];
 
 const CONTENT_TYPES = [
@@ -92,18 +129,86 @@ const RATING_FILTERS = [
   { value: '6', label: '6+ Stars' },
 ];
 
+// Genre Dropdown Component
+const GenreDropdown = ({ currentGenre, onSelect }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-/**
- * Render the Browse page that displays genres, filter controls, and a grid of content.
- *
- * The component loads content from the TMDB API (trending or discover by genre), applies
- * client-side filters (type, country, year, rating) and sorting, and exposes controls
- * to update and clear URL-backed filters.
- *
- * @returns {JSX.Element} The rendered browse UI including header, genre pills, filter panel, content grid, and empty/loading states.
- */
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-netflix-dark-gray hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg transition-colors border border-gray-700"
+      >
+        <span className="text-lg">{currentGenre?.icon || '🎬'}</span>
+        <span className="font-medium">{currentGenre?.name || 'Browse Genres'}</span>
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-netflix-dark-gray border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[600px] max-w-[95vw]">
+          <div className="mb-3 pb-2 border-b border-gray-700">
+            <h3 className="text-white font-semibold">Select Genre</h3>
+          </div>
+          <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+            <button
+              onClick={() => {
+                onSelect(null);
+                setIsOpen(false);
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                !currentGenre
+                  ? 'bg-netflix-red text-white'
+                  : 'hover:bg-gray-700 text-gray-300'
+              }`}
+            >
+              <span>🎬</span>
+              <span className="text-sm truncate">All Genres</span>
+            </button>
+            {GENRES.map((genre) => (
+              <button
+                key={genre.slug}
+                onClick={() => {
+                  onSelect(genre);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                  currentGenre?.slug === genre.slug
+                    ? 'bg-netflix-red text-white'
+                    : 'hover:bg-gray-700 text-gray-300'
+                }`}
+              >
+                <span>{genre.icon}</span>
+                <span className="text-sm truncate">{genre.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 function Browse() {
   const { genre } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +222,15 @@ function Browse() {
   const [selectedYear, setSelectedYear] = useState(searchParams.get('year') || '');
 
   const currentGenre = genre ? GENRES.find(g => g.slug === genre) : null;
+  const currentCountry = selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry) : null;
+
+  const handleGenreSelect = (selectedGenre) => {
+    if (selectedGenre) {
+      navigate(`/browse/${selectedGenre.slug}`);
+    } else {
+      navigate('/browse');
+    }
+  };
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -124,16 +238,12 @@ function Browse() {
       try {
         let results = [];
 
-        // Determine if we're fetching movies, TV, or both
         const fetchMovies = selectedType === 'all' || selectedType === 'movie';
         const fetchTV = selectedType === 'all' || selectedType === 'series';
 
-        // Build API parameters
         const genreId = genre ? TMDB_GENRE_IDS[genre] : null;
 
-        // Fetch based on type and filters
         if (genreId) {
-          // Fetch by genre using discover
           const moviePromise = fetchMovies ? tmdbApi.discoverByGenre(genreId, 'movie') : Promise.resolve({ results: [] });
           const tvPromise = fetchTV ? tmdbApi.discoverByGenre(genreId, 'tv') : Promise.resolve({ results: [] });
 
@@ -143,12 +253,21 @@ function Browse() {
             ...(movieData.results || []).map(m => ({ ...m, media_type: 'movie' })),
             ...(tvData.results || []).map(t => ({ ...t, media_type: 'tv' }))
           ];
+        } else if (selectedCountry) {
+          // Fetch by country
+          const moviePromise = fetchMovies ? tmdbApi.discoverByCountry(selectedCountry, 'movie') : Promise.resolve({ results: [] });
+          const tvPromise = fetchTV ? tmdbApi.discoverByCountry(selectedCountry, 'tv') : Promise.resolve({ results: [] });
+
+          const [movieData, tvData] = await Promise.all([moviePromise, tvPromise]);
+
+          results = [
+            ...(movieData.results || []).map(m => ({ ...m, media_type: 'movie' })),
+            ...(tvData.results || []).map(t => ({ ...t, media_type: 'tv' }))
+          ];
         } else {
-          // Fetch trending/popular content
           const trendingData = await tmdbApi.getTrending();
           results = trendingData.results || [];
 
-          // Filter by type if specified
           if (selectedType === 'movie') {
             results = results.filter(item => item.media_type === 'movie');
           } else if (selectedType === 'series') {
@@ -182,9 +301,7 @@ function Browse() {
         } else if (selectedSort === 'title') {
           results.sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
         }
-        // popularity is default from API
 
-        // Format the results
         setContent(results.map(item => ({
           id: item.id,
           title: item.title || item.name,
@@ -225,86 +342,82 @@ function Browse() {
     setSearchParams({});
   };
 
-  const years = Array.from({ length: 30 }, (_, i) => 2024 - i);
+  const years = Array.from({ length: 30 }, (_, i) => 2025 - i);
+
+  const hasActiveFilters = selectedType !== 'all' || selectedCountry || selectedRating !== 'all' || selectedYear;
 
   return (
     <div className="min-h-screen bg-netflix-black pt-20 px-4 md:px-12">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white">
-              {currentGenre ? (
-                <span className="flex items-center gap-3">
-                  <span>{currentGenre.icon}</span>
-                  {currentGenre.name}
-                </span>
-              ) : (
-                'Browse All'
-              )}
-            </h1>
-            <p className="text-gray-400 mt-2">
-              {content.length} titles available
-            </p>
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Genre Dropdown */}
+            <GenreDropdown
+              currentGenre={currentGenre}
+              onSelect={handleGenreSelect}
+            />
+
+            {/* Country Badge */}
+            {currentCountry && (
+              <div className="flex items-center gap-2 bg-netflix-red text-white px-4 py-2 rounded-lg">
+                <span>{currentCountry.flag}</span>
+                <span>{currentCountry.name}</span>
+                <button
+                  onClick={() => {
+                    setSelectedCountry('');
+                    updateFilter('country', '');
+                  }}
+                  className="ml-2 hover:bg-red-700 rounded-full p-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Filters
-            {(selectedType !== 'all' || selectedCountry || selectedRating !== 'all' || selectedYear) && (
-              <span className="bg-netflix-red text-white text-xs px-2 py-0.5 rounded-full">
-                Active
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Genre Pills */}
-      <div className="mb-6 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 pb-2">
-          <Link
-            to="/browse"
-            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              !genre
-                ? 'bg-white text-black'
-                : 'bg-gray-800 text-white hover:bg-gray-700'
-            }`}
-          >
-            All
-          </Link>
-          {GENRES.map((g) => (
-            <Link
-              key={g.slug}
-              to={`/browse/${g.slug}`}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                genre === g.slug
-                  ? 'bg-white text-black'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
+          <div className="flex items-center gap-3">
+            <span className="text-gray-400">{content.length} titles</span>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                showFilters
+                  ? 'bg-netflix-red text-white'
+                  : 'bg-gray-800 hover:bg-gray-700 text-white'
               }`}
             >
-              {g.icon} {g.name}
-            </Link>
-          ))}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filters
+              {hasActiveFilters && (
+                <span className="bg-white text-netflix-red text-xs px-2 py-0.5 rounded-full font-bold">
+                  {[selectedType !== 'all', selectedCountry, selectedRating !== 'all', selectedYear].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-gray-900/90 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-800">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">Filter & Sort</h3>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Clear all
-            </button>
+        <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-800">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-white font-semibold text-lg">Filter & Sort</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-netflix-red hover:text-red-400 transition-colors flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear all
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -317,7 +430,7 @@ function Browse() {
                   setSelectedType(e.target.value);
                   updateFilter('type', e.target.value === 'all' ? '' : e.target.value);
                 }}
-                className="w-full bg-gray-800 text-white rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-netflix-red"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-netflix-red border border-gray-700"
               >
                 {CONTENT_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -336,7 +449,7 @@ function Browse() {
                   setSelectedCountry(e.target.value);
                   updateFilter('country', e.target.value);
                 }}
-                className="w-full bg-gray-800 text-white rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-netflix-red"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-netflix-red border border-gray-700"
               >
                 <option value="">All Countries</option>
                 {COUNTRIES.map((country) => (
@@ -356,7 +469,7 @@ function Browse() {
                   setSelectedYear(e.target.value);
                   updateFilter('year', e.target.value);
                 }}
-                className="w-full bg-gray-800 text-white rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-netflix-red"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-netflix-red border border-gray-700"
               >
                 <option value="">All Years</option>
                 {years.map((year) => (
@@ -376,7 +489,7 @@ function Browse() {
                   setSelectedRating(e.target.value);
                   updateFilter('rating', e.target.value === 'all' ? '' : e.target.value);
                 }}
-                className="w-full bg-gray-800 text-white rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-netflix-red"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-netflix-red border border-gray-700"
               >
                 {RATING_FILTERS.map((rating) => (
                   <option key={rating.value} value={rating.value}>
@@ -395,7 +508,7 @@ function Browse() {
                   setSelectedSort(e.target.value);
                   updateFilter('sort', e.target.value);
                 }}
-                className="w-full bg-gray-800 text-white rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-netflix-red"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-netflix-red border border-gray-700"
               >
                 {SORT_OPTIONS.map((sort) => (
                   <option key={sort.value} value={sort.value}>
@@ -403,29 +516,6 @@ function Browse() {
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
-
-          {/* Country Quick Select */}
-          <div className="mt-6">
-            <label className="block text-sm text-gray-400 mb-3">Quick Select Country</label>
-            <div className="flex flex-wrap gap-2">
-              {COUNTRIES.slice(0, 8).map((country) => (
-                <button
-                  key={country.code}
-                  onClick={() => {
-                    setSelectedCountry(country.code);
-                    updateFilter('country', country.code);
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    selectedCountry === country.code
-                      ? 'bg-netflix-red text-white'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  {country.flag} {country.name}
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -436,49 +526,41 @@ function Browse() {
         <Loading />
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {content.map((item) => (
-              <div key={item.id} className="relative group">
-                <MovieCard movie={item} />
-                {/* IMDB Rating Badge */}
-                <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                  {item.vote_average}
-                </div>
-                {/* Content Type Badge */}
-                {item.type === 'series' && (
-                  <div className="absolute top-2 left-2 bg-netflix-red text-white text-xs font-bold px-2 py-1 rounded">
-                    Series
+          {content.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {content.map((item) => (
+                <div key={item.id} className="relative group">
+                  <MovieCard movie={item} />
+                  {/* IMDB Rating Badge */}
+                  <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    {item.vote_average?.toFixed(1)}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Load More */}
-          <div className="mt-12 text-center">
-            <button className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 rounded-md transition-colors">
-              Load More
-            </button>
-          </div>
+                  {/* Content Type Badge */}
+                  {item.type === 'series' && (
+                    <div className="absolute top-2 left-2 bg-netflix-red text-white text-xs font-bold px-2 py-1 rounded">
+                      Series
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">🎬</div>
+              <h3 className="text-white text-xl font-semibold mb-2">No content found</h3>
+              <p className="text-gray-400 mb-4">Try adjusting your filters</p>
+              <button
+                onClick={clearFilters}
+                className="bg-netflix-red hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </>
-      )}
-
-      {/* Empty State */}
-      {!loading && content.length === 0 && (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">🎬</div>
-          <h3 className="text-white text-xl font-semibold mb-2">No content found</h3>
-          <p className="text-gray-400">Try adjusting your filters</p>
-          <button
-            onClick={clearFilters}
-            className="mt-4 bg-netflix-red hover:bg-red-700 text-white px-6 py-2 rounded-md transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
       )}
     </div>
   );
