@@ -1,106 +1,172 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { tmdbApi } from '../lib/videoProviders';
 import VideoPlayer from '../components/VideoPlayer';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import Loading from '../components/Loading';
 
 const Watch = () => {
-  const { movieId } = useParams();
+  const { type, id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [movie, setMovie] = useState(null);
-  const [loading, setLoading] = useState(true);
 
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // For TV shows
+  const [currentSeason, setCurrentSeason] = useState(parseInt(searchParams.get('s')) || 1);
+  const [currentEpisode, setCurrentEpisode] = useState(parseInt(searchParams.get('e')) || 1);
+  const [seasonData, setSeasonData] = useState(null);
+
+  // Fetch content details
   useEffect(() => {
-    const fetchMovie = async () => {
+    const fetchContent = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&append_to_response=videos`
-        );
-        const data = await response.json();
-        setMovie(data);
-      } catch (error) {
-        console.error('Error fetching movie:', error);
+        if (type === 'movie') {
+          const data = await tmdbApi.getMovieDetails(id);
+          setContent(data);
+        } else if (type === 'tv') {
+          const data = await tmdbApi.getTvDetails(id);
+          setContent(data);
+
+          // Fetch season details
+          const season = await tmdbApi.getTvSeasonDetails(id, currentSeason);
+          setSeasonData(season);
+        }
+      } catch (err) {
+        setError('Failed to load content');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMovie();
-  }, [movieId]);
+    fetchContent();
+  }, [type, id]);
 
-  const handleProgress = (currentTime, duration) => {
-    // Save progress to localStorage
-    const progress = {
-      movieId,
-      currentTime,
-      duration,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(`watch-progress-${movieId}`, JSON.stringify(progress));
-  };
-
-  const handleEnded = () => {
-    // Clear progress and navigate back
-    localStorage.removeItem(`watch-progress-${movieId}`);
-    navigate(-1);
-  };
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  // Get saved progress
-  const getSavedProgress = () => {
-    const saved = localStorage.getItem(`watch-progress-${movieId}`);
-    if (saved) {
-      const data = JSON.parse(saved);
-      // Only use if saved within last 7 days
-      if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
-        return data.currentTime;
+  // Fetch season data when season changes
+  useEffect(() => {
+    const fetchSeason = async () => {
+      if (type === 'tv' && content) {
+        try {
+          const season = await tmdbApi.getTvSeasonDetails(id, currentSeason);
+          setSeasonData(season);
+        } catch (err) {
+          console.error('Failed to fetch season data:', err);
+        }
       }
+    };
+
+    fetchSeason();
+  }, [type, id, currentSeason, content]);
+
+  // Update URL when episode changes
+  useEffect(() => {
+    if (type === 'tv') {
+      navigate(`/watch/tv/${id}?s=${currentSeason}&e=${currentEpisode}`, { replace: true });
     }
-    return 0;
+  }, [type, id, currentSeason, currentEpisode, navigate]);
+
+  const handleClose = () => {
+    if (type === 'movie') {
+      navigate(`/movie/${id}`);
+    } else {
+      navigate(`/series/${id}`);
+    }
+  };
+
+  const hasNextEpisode = () => {
+    if (type !== 'tv' || !seasonData || !content) return false;
+
+    // Check if there's a next episode in current season
+    if (currentEpisode < (seasonData.episodes?.length || 0)) {
+      return true;
+    }
+
+    // Check if there's a next season
+    if (currentSeason < (content.number_of_seasons || 0)) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const hasPreviousEpisode = () => {
+    if (type !== 'tv') return false;
+    return currentEpisode > 1 || currentSeason > 1;
+  };
+
+  const goToNextEpisode = async () => {
+    if (!seasonData || !content) return;
+
+    if (currentEpisode < (seasonData.episodes?.length || 0)) {
+      // Next episode in same season
+      setCurrentEpisode(currentEpisode + 1);
+    } else if (currentSeason < (content.number_of_seasons || 0)) {
+      // First episode of next season
+      setCurrentSeason(currentSeason + 1);
+      setCurrentEpisode(1);
+    }
+  };
+
+  const goToPreviousEpisode = () => {
+    if (currentEpisode > 1) {
+      setCurrentEpisode(currentEpisode - 1);
+    } else if (currentSeason > 1) {
+      // Go to last episode of previous season
+      setCurrentSeason(currentSeason - 1);
+      // Will need to fetch previous season data to know the last episode
+      setCurrentEpisode(1); // Fallback to episode 1
+    }
+  };
+
+  const getTitle = () => {
+    if (!content) return '';
+
+    if (type === 'movie') {
+      return content.title;
+    }
+
+    const episodeData = seasonData?.episodes?.find(e => e.episode_number === currentEpisode);
+    return `${content.name} - S${currentSeason}E${currentEpisode}${episodeData ? `: ${episodeData.name}` : ''}`;
   };
 
   if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-netflix-red border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <Loading />;
   }
 
-  if (!movie) {
+  if (error || !content) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-netflix-black flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-xl mb-4">Movie not found</p>
-          <button onClick={() => navigate('/')} className="btn-netflix">
-            Go Home
+          <h1 className="text-2xl text-white mb-4">{error || 'Content not found'}</h1>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 bg-netflix-red hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Go Back
           </button>
         </div>
       </div>
     );
   }
 
-  // Find trailer or use demo
-  const trailer = movie.videos?.results?.find(
-    (v) => v.type === 'Trailer' && v.site === 'YouTube'
-  );
-
-  // Demo HLS stream (Big Buck Bunny)
-  const demoStream = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-
   return (
     <VideoPlayer
-      src={demoStream}
-      poster={movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : undefined}
-      title={movie.title}
-      onProgress={handleProgress}
-      onEnded={handleEnded}
-      onBack={handleBack}
-      initialTime={getSavedProgress()}
-      autoPlay={true}
+      tmdbId={parseInt(id)}
+      type={type}
+      season={currentSeason}
+      episode={currentEpisode}
+      title={getTitle()}
+      backdrop={content.backdrop_path}
+      onClose={handleClose}
+      onNextEpisode={goToNextEpisode}
+      onPreviousEpisode={goToPreviousEpisode}
+      hasNextEpisode={hasNextEpisode()}
+      hasPreviousEpisode={hasPreviousEpisode()}
     />
   );
 };

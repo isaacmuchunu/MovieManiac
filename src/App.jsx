@@ -26,8 +26,7 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Watch page without navbar/footer */}
-        <Route path="/watch/:contentId" element={<Watch />} />
-        <Route path="/watch/:contentId/:episodeId" element={<Watch />} />
+        <Route path="/watch/:type/:id" element={<Watch />} />
 
         {/* Main app with navbar/footer */}
         <Route path="/*" element={

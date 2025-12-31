@@ -1,279 +1,134 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Hls from 'hls.js';
-
-// Icons
-const PlayIcon = () => (
-  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
-
-const PauseIcon = () => (
-  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-  </svg>
-);
-
-const VolumeHighIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-  </svg>
-);
-
-const VolumeMuteIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-  </svg>
-);
-
-const FullscreenIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-  </svg>
-);
-
-const ExitFullscreenIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4m0 5H4m0 0l5-5m5 5V4m0 5h5m0 0l-5-5m-5 11v5m0-5H4m0 0l5 5m5-5v5m0-5h5m0 0l-5 5" />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-const BackIcon = () => (
-  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-  </svg>
-);
-
-const Forward10Icon = () => (
-  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M18 13c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6v4l5-5-5-5v4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8h-2z" />
-    <text x="9" y="15" fontSize="7" fontWeight="bold">10</text>
-  </svg>
-);
-
-const Rewind10Icon = () => (
-  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M6 13c0 3.31 2.69 6 6 6s6-2.69 6-6-2.69-6-6-6v4l-5-5 5-5v4c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8h2z" />
-    <text x="9" y="15" fontSize="7" fontWeight="bold">10</text>
-  </svg>
-);
-
-const SubtitlesIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-  </svg>
-);
-
-const formatTime = (seconds) => {
-  if (isNaN(seconds)) return '0:00';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
-const QUALITY_LABELS = {
-  UHD_4K: '4K Ultra HD',
-  FHD_1080: '1080p Full HD',
-  HD_720: '720p HD',
-  SD_480: '480p',
-  SD_360: '360p',
-  AUTO: 'Auto',
-};
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { videoServers, getMovieStreamUrl, getTvStreamUrl, getNextServer } from '../lib/videoProviders';
 
 const VideoPlayer = ({
-  src,
-  poster,
-  title,
-  subtitles = [],
-  onProgress,
-  onEnded,
-  onBack,
-  initialTime = 0,
-  autoPlay = true,
+  tmdbId,
+  type = 'movie', // 'movie' or 'tv'
+  season = 1,
+  episode = 1,
+  title = '',
+  backdrop = '',
+  onClose,
+  onNextEpisode,
+  onPreviousEpisode,
+  hasNextEpisode = false,
+  hasPreviousEpisode = false
 }) => {
-  const containerRef = useRef(null);
-  const videoRef = useRef(null);
-  const hlsRef = useRef(null);
-  const progressRef = useRef(null);
-  const controlsTimeoutRef = useRef(null);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [buffered, setBuffered] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
+  const [currentServer, setCurrentServer] = useState(videoServers[0]);
+  const [showServerList, setShowServerList] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [autoSwitchAttempts, setAutoSwitchAttempts] = useState(0);
+  const [loadStartTime, setLoadStartTime] = useState(Date.now());
 
-  const [qualities, setQualities] = useState([]);
-  const [currentQuality, setCurrentQuality] = useState(-1);
-  const [showSettings, setShowSettings] = useState(false);
+  const containerRef = useRef(null);
+  const iframeRef = useRef(null);
+  const controlsTimeoutRef = useRef(null);
 
-  const [selectedSubtitle, setSelectedSubtitle] = useState(-1);
-  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
-
-  // Initialize HLS
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !src) return;
-
-    const initPlayer = () => {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 90,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 600,
-          maxBufferSize: 60 * 1000 * 1000,
-          maxBufferHole: 0.5,
-          startLevel: -1, // Auto quality selection
-        });
-
-        hls.loadSource(src);
-        hls.attachMedia(video);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-          const levelQualities = data.levels.map((level, index) => ({
-            index,
-            height: level.height,
-            bitrate: level.bitrate,
-            name: `${level.height}p`,
-          }));
-          setQualities([{ index: -1, name: 'Auto' }, ...levelQualities]);
-          setIsLoading(false);
-
-          if (autoPlay) {
-            video.play().catch(() => {});
-          }
-        });
-
-        hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-          setCurrentQuality(data.level);
-        });
-
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                hls.recoverMediaError();
-                break;
-              default:
-                setError('Playback error occurred');
-                break;
-            }
-          }
-        });
-
-        hlsRef.current = hls;
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
-        video.src = src;
-        video.addEventListener('loadedmetadata', () => {
-          setIsLoading(false);
-          if (autoPlay) video.play().catch(() => {});
-        });
-      }
-    };
-
-    initPlayer();
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
-  }, [src, autoPlay]);
-
-  // Set initial time
-  useEffect(() => {
-    if (videoRef.current && initialTime > 0 && duration > 0) {
-      videoRef.current.currentTime = initialTime;
+  // Get the current stream URL
+  const getStreamUrl = useCallback(() => {
+    if (type === 'movie') {
+      return getMovieStreamUrl(tmdbId, currentServer.id);
     }
-  }, [initialTime, duration]);
+    return getTvStreamUrl(tmdbId, season, episode, currentServer.id);
+  }, [tmdbId, type, season, episode, currentServer]);
 
-  // Video event handlers
+  // Handle iframe load
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+    setError(null);
+    setAutoSwitchAttempts(0);
+  };
+
+  // Handle iframe error or timeout
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-      if (onProgress && video.duration) {
-        onProgress(video.currentTime, video.duration);
+    const timeout = setTimeout(() => {
+      if (isLoading && autoSwitchAttempts < videoServers.length - 1) {
+        // Auto-switch to next server after timeout
+        const nextServer = getNextServer(currentServer.id);
+        setCurrentServer(nextServer);
+        setAutoSwitchAttempts(prev => prev + 1);
+        setLoadStartTime(Date.now());
+      } else if (isLoading && autoSwitchAttempts >= videoServers.length - 1) {
+        setError('Unable to load video from any server. Please try again later.');
+        setIsLoading(false);
       }
-    };
+    }, 15000); // 15 second timeout per server
 
-    const handleLoadedMetadata = () => {
-      setDuration(video.duration);
-    };
+    return () => clearTimeout(timeout);
+  }, [isLoading, currentServer.id, autoSwitchAttempts, loadStartTime]);
 
-    const handleProgress = () => {
-      if (video.buffered.length > 0) {
-        setBuffered(video.buffered.end(video.buffered.length - 1));
-      }
-    };
+  // Switch server manually
+  const switchServer = (server) => {
+    if (server.id !== currentServer.id) {
+      setCurrentServer(server);
+      setIsLoading(true);
+      setError(null);
+      setAutoSwitchAttempts(0);
+      setLoadStartTime(Date.now());
+    }
+    setShowServerList(false);
+  };
 
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-    const handleWaiting = () => setIsLoading(true);
-    const handleCanPlay = () => setIsLoading(false);
-    const handleEnded = () => {
-      setIsPlaying(false);
-      if (onEnded) onEnded();
-    };
+  // Toggle fullscreen
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
 
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('progress', handleProgress);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('waiting', handleWaiting);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('ended', handleEnded);
-
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('progress', handleProgress);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('waiting', handleWaiting);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('ended', handleEnded);
-    };
-  }, [onProgress, onEnded]);
-
-  // Controls visibility
-  const handleMouseMove = useCallback(() => {
+  // Handle mouse movement for controls
+  const handleMouseMove = () => {
     setShowControls(true);
     clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
+      setShowControls(false);
     }, 3000);
-  }, [isPlaying]);
+  };
 
-  // Fullscreen handling
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      switch (e.key) {
+        case 'Escape':
+          if (isFullscreen) {
+            document.exitFullscreen();
+          } else {
+            onClose?.();
+          }
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case 'ArrowRight':
+          if (e.shiftKey && hasNextEpisode) {
+            onNextEpisode?.();
+          }
+          break;
+        case 'ArrowLeft':
+          if (e.shiftKey && hasPreviousEpisode) {
+            onPreviousEpisode?.();
+          }
+          break;
+        case 's':
+        case 'S':
+          setShowServerList(prev => !prev);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, onClose, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+
+  // Fullscreen change listener
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -283,342 +138,276 @@ const VideoPlayer = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Keyboard controls
+  // Save watch progress
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT') return;
+    const saveProgress = () => {
+      const watchHistory = JSON.parse(localStorage.getItem('moovie-watch-history') || '[]');
+      const existingIndex = watchHistory.findIndex(
+        item => item.tmdbId === tmdbId && item.type === type
+      );
 
-      switch (e.key) {
-        case ' ':
-        case 'k':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          skip(10);
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          skip(-10);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          changeVolume(0.1);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          changeVolume(-0.1);
-          break;
-        case 'm':
-          toggleMute();
-          break;
-        case 'f':
-          toggleFullscreen();
-          break;
-        case 'Escape':
-          if (isFullscreen) toggleFullscreen();
-          break;
+      const historyItem = {
+        tmdbId,
+        type,
+        title,
+        backdrop,
+        season: type === 'tv' ? season : undefined,
+        episode: type === 'tv' ? episode : undefined,
+        watchedAt: new Date().toISOString(),
+        server: currentServer.id
+      };
+
+      if (existingIndex > -1) {
+        watchHistory[existingIndex] = historyItem;
+      } else {
+        watchHistory.unshift(historyItem);
       }
+
+      // Keep only last 50 items
+      localStorage.setItem('moovie-watch-history', JSON.stringify(watchHistory.slice(0, 50)));
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen]);
+    saveProgress();
+  }, [tmdbId, type, season, episode, title, backdrop, currentServer.id]);
 
-  // Player controls
-  const togglePlay = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play().catch(() => {});
-    }
-  };
-
-  const skip = (seconds) => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = Math.max(0, Math.min(video.currentTime + seconds, duration));
-  };
-
-  const seek = (e) => {
-    const rect = progressRef.current.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    const time = percent * duration;
-    videoRef.current.currentTime = time;
-  };
-
-  const changeVolume = (delta) => {
-    const newVolume = Math.max(0, Math.min(1, volume + delta));
-    setVolume(newVolume);
-    videoRef.current.volume = newVolume;
-    if (newVolume > 0) setIsMuted(false);
-  };
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const changeQuality = (levelIndex) => {
-    if (hlsRef.current) {
-      hlsRef.current.currentLevel = levelIndex;
-      setCurrentQuality(levelIndex);
-    }
-    setShowSettings(false);
-  };
-
-  const handleVolumeChange = (e) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    videoRef.current.volume = newVolume;
-    setIsMuted(newVolume === 0);
-  };
-
-  if (error) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center">
-          <p className="text-white text-xl mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="btn-netflix"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Reset loading state when content changes
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    setAutoSwitchAttempts(0);
+    setLoadStartTime(Date.now());
+  }, [tmdbId, type, season, episode]);
 
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 bg-black z-50"
+      className="fixed inset-0 bg-black z-50 flex flex-col"
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        className="w-full h-full object-contain"
-        poster={poster}
-        onClick={togglePlay}
-        playsInline
-      />
-
-      {/* Loading Spinner */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-netflix-red border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {/* Center Play Button */}
-      {!isPlaying && !isLoading && (
-        <button
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-          onClick={togglePlay}
-        >
-          <PlayIcon />
-        </button>
-      )}
-
-      {/* Top Bar */}
+      {/* Top Controls */}
       <div
-        className={`absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        className={`absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/90 to-transparent p-4 transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
-          >
-            <BackIcon />
-          </button>
-          <h1 className="text-xl font-semibold text-white">{title}</h1>
-        </div>
-      </div>
-
-      {/* Bottom Controls */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Progress Bar */}
-        <div
-          ref={progressRef}
-          className="relative h-1 bg-gray-600 rounded-full mb-4 cursor-pointer group"
-          onClick={seek}
-        >
-          {/* Buffered */}
-          <div
-            className="absolute h-full bg-gray-500 rounded-full"
-            style={{ width: `${(buffered / duration) * 100}%` }}
-          />
-          {/* Progress */}
-          <div
-            className="absolute h-full bg-netflix-red rounded-full"
-            style={{ width: `${(currentTime / duration) * 100}%` }}
-          />
-          {/* Thumb */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-netflix-red rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `${(currentTime / duration) * 100}%`, marginLeft: '-8px' }}
-          />
-        </div>
-
-        {/* Control Buttons */}
         <div className="flex items-center justify-between">
+          {/* Back Button & Title */}
           <div className="flex items-center gap-4">
-            {/* Play/Pause */}
             <button
-              onClick={togglePlay}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              onClick={onClose}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
             </button>
-
-            {/* Rewind 10s */}
-            <button
-              onClick={() => skip(-10)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <Rewind10Icon />
-            </button>
-
-            {/* Forward 10s */}
-            <button
-              onClick={() => skip(10)}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <Forward10Icon />
-            </button>
-
-            {/* Volume */}
-            <div className="flex items-center gap-2 group">
-              <button
-                onClick={toggleMute}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                {isMuted || volume === 0 ? <VolumeMuteIcon /> : <VolumeHighIcon />}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={isMuted ? 0 : volume}
-                onChange={handleVolumeChange}
-                className="w-0 group-hover:w-20 transition-all duration-300 accent-netflix-red"
-              />
-            </div>
-
-            {/* Time */}
-            <div className="text-sm text-white">
-              {formatTime(currentTime)} / {formatTime(duration)}
+            <div>
+              <h1 className="text-white text-xl font-bold">{title}</h1>
+              {type === 'tv' && (
+                <p className="text-gray-400 text-sm">Season {season}, Episode {episode}</p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Subtitles */}
-            {subtitles.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowSubtitleMenu(!showSubtitleMenu)}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                >
-                  <SubtitlesIcon />
-                </button>
-                {showSubtitleMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-netflix-dark-gray rounded-lg shadow-xl overflow-hidden min-w-[150px]">
-                    <button
-                      onClick={() => {
-                        setSelectedSubtitle(-1);
-                        setShowSubtitleMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 ${
-                        selectedSubtitle === -1 ? 'text-netflix-red' : 'text-white'
-                      }`}
-                    >
-                      Off
-                    </button>
-                    {subtitles.map((sub, index) => (
+          {/* Right Controls */}
+          <div className="flex items-center gap-3">
+            {/* Server Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowServerList(!showServerList)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <span className="text-lg">{currentServer.logo}</span>
+                <span className="text-white text-sm hidden sm:inline">{currentServer.name}</span>
+                <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                  {currentServer.quality}
+                </span>
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Server Dropdown */}
+              {showServerList && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-netflix-dark-gray rounded-lg shadow-2xl overflow-hidden z-20">
+                  <div className="p-3 border-b border-gray-700">
+                    <h3 className="text-white font-semibold text-sm">Select Server</h3>
+                    <p className="text-gray-400 text-xs">{videoServers.length} servers available</p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {videoServers.map((server, index) => (
                       <button
-                        key={index}
-                        onClick={() => {
-                          setSelectedSubtitle(index);
-                          setShowSubtitleMenu(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 ${
-                          selectedSubtitle === index ? 'text-netflix-red' : 'text-white'
+                        key={server.id}
+                        onClick={() => switchServer(server)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors ${
+                          currentServer.id === server.id ? 'bg-netflix-red/20' : ''
                         }`}
                       >
-                        {sub.label}
+                        <span className="text-xl w-8">{server.logo}</span>
+                        <div className="flex-1 text-left">
+                          <p className="text-white text-sm font-medium">{server.name}</p>
+                          <p className="text-gray-500 text-xs">Server {index + 1}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          server.quality === 'FHD' ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-700 text-gray-300'
+                        }`}>
+                          {server.quality}
+                        </span>
+                        {currentServer.id === server.id && (
+                          <svg className="w-5 h-5 text-netflix-red" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                          </svg>
+                        )}
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Quality Settings */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <SettingsIcon />
-              </button>
-              {showSettings && (
-                <div className="absolute bottom-full right-0 mb-2 bg-netflix-dark-gray rounded-lg shadow-xl overflow-hidden min-w-[150px]">
-                  <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
-                    Quality
+                  <div className="p-3 border-t border-gray-700 bg-black/30">
+                    <p className="text-gray-500 text-xs text-center">
+                      Press <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">S</kbd> to toggle server list
+                    </p>
                   </div>
-                  {qualities.map((quality) => (
-                    <button
-                      key={quality.index}
-                      onClick={() => changeQuality(quality.index)}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center justify-between ${
-                        currentQuality === quality.index ? 'text-netflix-red' : 'text-white'
-                      }`}
-                    >
-                      {quality.name}
-                      {quality.index === -1 && currentQuality >= 0 && (
-                        <span className="text-xs text-gray-400">
-                          ({qualities.find(q => q.index === currentQuality)?.name})
-                        </span>
-                      )}
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
 
-            {/* Fullscreen */}
+            {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             >
-              {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+              {isFullscreen ? (
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Video Player */}
+      <div className="flex-1 relative">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
+            <div className="relative mb-6">
+              <div className="w-20 h-20 border-4 border-netflix-red/30 rounded-full" />
+              <div className="absolute inset-0 w-20 h-20 border-4 border-netflix-red border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-white text-lg font-medium">Loading from {currentServer.name}...</p>
+            {autoSwitchAttempts > 0 && (
+              <p className="text-gray-400 text-sm mt-2">
+                Trying server {autoSwitchAttempts + 1} of {videoServers.length}
+              </p>
+            )}
+            <div className="mt-4 flex gap-2">
+              {videoServers.slice(0, 7).map((server, i) => (
+                <div
+                  key={server.id}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    i < autoSwitchAttempts ? 'bg-gray-600' :
+                    i === autoSwitchAttempts ? 'bg-netflix-red animate-pulse' :
+                    'bg-gray-700'
+                  }`}
+                />
+              ))}
+              {videoServers.length > 7 && <span className="text-gray-600 text-xs">+{videoServers.length - 7}</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
+            <svg className="w-16 h-16 text-netflix-red mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-white text-lg mb-2">{error}</p>
+            <p className="text-gray-400 text-sm mb-6">Try selecting a different server manually</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setAutoSwitchAttempts(0);
+                  setCurrentServer(videoServers[0]);
+                  setIsLoading(true);
+                  setError(null);
+                  setLoadStartTime(Date.now());
+                }}
+                className="px-6 py-3 bg-netflix-red hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => setShowServerList(true)}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Change Server
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Video Iframe */}
+        <iframe
+          ref={iframeRef}
+          src={getStreamUrl()}
+          className="w-full h-full"
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          onLoad={handleIframeLoad}
+          style={{ border: 'none' }}
+        />
+      </div>
+
+      {/* Bottom Controls - Episode Navigation */}
+      {type === 'tv' && (hasPreviousEpisode || hasNextEpisode) && (
+        <div
+          className={`absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 ${
+            showControls ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-4">
+            {hasPreviousEpisode && (
+              <button
+                onClick={onPreviousEpisode}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+                </svg>
+                <span className="text-white text-sm">Previous Episode</span>
+              </button>
+            )}
+            {hasNextEpisode && (
+              <button
+                onClick={onNextEpisode}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <span className="text-white text-sm">Next Episode</span>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Help */}
+      <div
+        className={`absolute bottom-4 left-4 text-gray-500 text-xs transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <p>
+          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded">F</kbd> fullscreen •
+          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded ml-2">S</kbd> servers •
+          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded ml-2">ESC</kbd> exit
+        </p>
       </div>
     </div>
   );
