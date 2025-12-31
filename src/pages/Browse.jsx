@@ -93,6 +93,15 @@ const RATING_FILTERS = [
 ];
 
 
+/**
+ * Render the Browse page that displays genres, filter controls, and a grid of content.
+ *
+ * The component loads content from the TMDB API (trending or discover by genre), applies
+ * client-side filters (type, country, year, rating) and sorting, and exposes controls
+ * to update and clear URL-backed filters.
+ *
+ * @returns {JSX.Element} The rendered browse UI including header, genre pills, filter panel, content grid, and empty/loading states.
+ */
 function Browse() {
   const { genre } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
