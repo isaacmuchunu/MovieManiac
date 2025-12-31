@@ -344,7 +344,6 @@ const Navbar = ({ onSearch }) => {
       {showSmartSearch && (
         <SmartSearch
           onClose={() => setShowSmartSearch(false)}
-          onSelect={handleSearchResult}
         />
       )}
     </nav>

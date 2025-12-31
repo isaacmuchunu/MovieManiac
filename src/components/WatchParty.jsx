@@ -85,9 +85,9 @@ function WatchParty() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 rounded-2xl p-6 md:p-8">
+    <div className="bg-gradient-to-br from-gray-900 via-netflix-red/10 to-gray-900 rounded-2xl p-6 md:p-8 border border-gray-800">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-br from-netflix-red to-red-700 rounded-lg flex items-center justify-center">
           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
@@ -105,8 +105,8 @@ function WatchParty() {
       {/* Features */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-gray-800/50 rounded-lg p-4 text-center">
-          <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-            <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 bg-netflix-red/20 rounded-full flex items-center justify-center mx-auto mb-2">
+            <svg className="w-5 h-5 text-netflix-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </div>
@@ -142,7 +142,7 @@ function WatchParty() {
       <div className="flex flex-col sm:flex-row gap-4">
         <button
           onClick={handleCreateParty}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
+          className="flex-1 bg-netflix-red hover:bg-netflix-red-hover text-white font-bold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -165,19 +165,19 @@ function WatchParty() {
         <h3 className="text-white font-medium mb-4">How it works</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 text-blue-400 text-xs font-bold">
+            <div className="w-6 h-6 bg-netflix-red/20 rounded-full flex items-center justify-center flex-shrink-0 text-netflix-red text-xs font-bold">
               1
             </div>
             <p className="text-gray-400">Create a party and get a unique code to share</p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 text-blue-400 text-xs font-bold">
+            <div className="w-6 h-6 bg-netflix-red/20 rounded-full flex items-center justify-center flex-shrink-0 text-netflix-red text-xs font-bold">
               2
             </div>
             <p className="text-gray-400">Friends join using your party code</p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 text-blue-400 text-xs font-bold">
+            <div className="w-6 h-6 bg-netflix-red/20 rounded-full flex items-center justify-center flex-shrink-0 text-netflix-red text-xs font-bold">
               3
             </div>
             <p className="text-gray-400">Watch together with synced playback and chat!</p>
@@ -220,7 +220,7 @@ function WatchParty() {
                   }}
                   className={`relative rounded-lg overflow-hidden transition-all ${
                     selectedContent?.id === item.id
-                      ? 'ring-2 ring-blue-500 scale-105'
+                      ? 'ring-2 ring-netflix-red scale-105'
                       : 'hover:scale-105'
                   }`}
                 >
@@ -230,7 +230,7 @@ function WatchParty() {
                     className="w-full aspect-[2/3] object-cover"
                   />
                   {selectedContent?.id === item.id && (
-                    <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-netflix-red/30 flex items-center justify-center">
                       <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                       </svg>
@@ -246,7 +246,7 @@ function WatchParty() {
             <button
               onClick={handleStartParty}
               disabled={!selectedContent}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-netflix-red hover:bg-netflix-red-hover text-white font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Start Party
             </button>
@@ -290,14 +290,14 @@ function WatchParty() {
                 setError('');
               }}
               placeholder="XXXXXX"
-              className="w-full bg-gray-800 text-white text-center text-3xl tracking-[0.5em] font-mono rounded-lg px-4 py-4 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+              className="w-full bg-gray-800 text-white text-center text-3xl tracking-[0.5em] font-mono rounded-lg px-4 py-4 outline-none focus:ring-2 focus:ring-netflix-red placeholder-gray-600"
               maxLength={6}
             />
 
             <button
               onClick={handleJoinParty}
               disabled={partyCode.length !== 6}
-              className="w-full mt-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-6 bg-netflix-red hover:bg-netflix-red-hover text-white font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Join Party
             </button>

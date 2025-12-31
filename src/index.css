@@ -93,7 +93,17 @@ body {
 
 /* Netflix-style row */
 .movie-row {
-  @apply flex gap-1 overflow-x-auto pb-10 pt-2 px-4 md:px-14;
+  @apply flex gap-2 overflow-x-auto pb-12 pt-4 px-4 md:px-14;
+}
+
+/* Section spacing */
+.section-spacing {
+  @apply py-8 md:py-12;
+}
+
+/* Card spacing */
+.card-gap {
+  @apply gap-3 md:gap-4;
 }
 
 /* Gradient overlays for rows */

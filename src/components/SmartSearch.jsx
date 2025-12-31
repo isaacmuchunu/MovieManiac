@@ -4,7 +4,7 @@ import debounce from 'lodash/debounce';
 
 const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 
-const SmartSearch = ({ isOpen, onClose }) => {
+const SmartSearch = ({ onClose, onSelect }) => {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const [query, setQuery] = useState('');
@@ -30,10 +30,10 @@ const SmartSearch = ({ isOpen, onClose }) => {
 
   // Focus input when opened
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, []);
 
   // Debounced search
   const searchContent = useCallback(
@@ -124,7 +124,16 @@ const SmartSearch = ({ isOpen, onClose }) => {
 
   const hasResults = results.movies.length > 0 || results.tv.length > 0 || results.people.length > 0;
 
-  if (!isOpen) return null;
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm overflow-y-auto">

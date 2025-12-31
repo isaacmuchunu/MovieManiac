@@ -3,7 +3,7 @@ import { videoServers, getMovieStreamUrl, getTvStreamUrl, getNextServer } from '
 
 const VideoPlayer = ({
   tmdbId,
-  type = 'movie', // 'movie' or 'tv'
+  type = 'movie',
   season = 1,
   episode = 1,
   title = '',
@@ -12,7 +12,11 @@ const VideoPlayer = ({
   onNextEpisode,
   onPreviousEpisode,
   hasNextEpisode = false,
-  hasPreviousEpisode = false
+  hasPreviousEpisode = false,
+  seasonData = null,
+  allSeasons = [],
+  onSeasonChange,
+  onEpisodeChange
 }) => {
   const [currentServer, setCurrentServer] = useState(videoServers[0]);
   const [showServerList, setShowServerList] = useState(false);
@@ -22,6 +26,8 @@ const VideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoSwitchAttempts, setAutoSwitchAttempts] = useState(0);
   const [loadStartTime, setLoadStartTime] = useState(Date.now());
+  const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(season);
 
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -46,7 +52,6 @@ const VideoPlayer = ({
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (isLoading && autoSwitchAttempts < videoServers.length - 1) {
-        // Auto-switch to next server after timeout
         const nextServer = getNextServer(currentServer.id);
         setCurrentServer(nextServer);
         setAutoSwitchAttempts(prev => prev + 1);
@@ -55,7 +60,7 @@ const VideoPlayer = ({
         setError('Unable to load video from any server. Please try again later.');
         setIsLoading(false);
       }
-    }, 15000); // 15 second timeout per server
+    }, 15000);
 
     return () => clearTimeout(timeout);
   }, [isLoading, currentServer.id, autoSwitchAttempts, loadStartTime]);
@@ -74,12 +79,16 @@ const VideoPlayer = ({
 
   // Toggle fullscreen
   const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) {
-      await containerRef.current?.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      await document.exitFullscreen();
-      setIsFullscreen(false);
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current?.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
     }
   };
 
@@ -88,7 +97,9 @@ const VideoPlayer = ({
     setShowControls(true);
     clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false);
+      if (!showServerList && !showEpisodeList) {
+        setShowControls(false);
+      }
     }, 3000);
   };
 
@@ -97,7 +108,11 @@ const VideoPlayer = ({
     const handleKeyDown = (e) => {
       switch (e.key) {
         case 'Escape':
-          if (isFullscreen) {
+          if (showServerList) {
+            setShowServerList(false);
+          } else if (showEpisodeList) {
+            setShowEpisodeList(false);
+          } else if (isFullscreen) {
             document.exitFullscreen();
           } else {
             onClose?.();
@@ -120,13 +135,33 @@ const VideoPlayer = ({
         case 's':
         case 'S':
           setShowServerList(prev => !prev);
+          setShowEpisodeList(false);
+          break;
+        case 'e':
+        case 'E':
+          if (type === 'tv') {
+            setShowEpisodeList(prev => !prev);
+            setShowServerList(false);
+          }
+          break;
+        case 'n':
+        case 'N':
+          if (hasNextEpisode) {
+            onNextEpisode?.();
+          }
+          break;
+        case 'p':
+        case 'P':
+          if (hasPreviousEpisode) {
+            onPreviousEpisode?.();
+          }
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, onClose, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [isFullscreen, onClose, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, showServerList, showEpisodeList, type]);
 
   // Fullscreen change listener
   useEffect(() => {
@@ -163,7 +198,6 @@ const VideoPlayer = ({
         watchHistory.unshift(historyItem);
       }
 
-      // Keep only last 50 items
       localStorage.setItem('moovie-watch-history', JSON.stringify(watchHistory.slice(0, 50)));
     };
 
@@ -178,6 +212,22 @@ const VideoPlayer = ({
     setLoadStartTime(Date.now());
   }, [tmdbId, type, season, episode]);
 
+  // Handle episode click
+  const handleEpisodeClick = (ep) => {
+    if (onEpisodeChange) {
+      onEpisodeChange(selectedSeason, ep.episode_number);
+    }
+    setShowEpisodeList(false);
+  };
+
+  // Handle season click
+  const handleSeasonClick = (seasonNum) => {
+    setSelectedSeason(seasonNum);
+    if (onSeasonChange) {
+      onSeasonChange(seasonNum);
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -187,7 +237,7 @@ const VideoPlayer = ({
       {/* Top Controls */}
       <div
         className={`absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/90 to-transparent p-4 transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
+          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
         <div className="flex items-center justify-between">
@@ -196,6 +246,7 @@ const VideoPlayer = ({
             <button
               onClick={onClose}
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              aria-label="Go back"
             >
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -211,10 +262,29 @@ const VideoPlayer = ({
 
           {/* Right Controls */}
           <div className="flex items-center gap-3">
+            {/* Episode List Button (TV only) */}
+            {type === 'tv' && (
+              <button
+                onClick={() => {
+                  setShowEpisodeList(!showEpisodeList);
+                  setShowServerList(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span className="text-white text-sm hidden sm:inline">Episodes</span>
+              </button>
+            )}
+
             {/* Server Selector */}
             <div className="relative">
               <button
-                onClick={() => setShowServerList(!showServerList)}
+                onClick={() => {
+                  setShowServerList(!showServerList);
+                  setShowEpisodeList(false);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
               >
                 <span className="text-lg">{currentServer.logo}</span>
@@ -274,6 +344,7 @@ const VideoPlayer = ({
             <button
               onClick={toggleFullscreen}
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             >
               {isFullscreen ? (
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,6 +359,77 @@ const VideoPlayer = ({
           </div>
         </div>
       </div>
+
+      {/* Episode List Panel */}
+      {type === 'tv' && showEpisodeList && seasonData && (
+        <div className="absolute top-16 right-4 bottom-20 w-96 max-w-[90vw] bg-netflix-dark-gray/95 backdrop-blur rounded-lg shadow-2xl z-20 flex flex-col">
+          <div className="p-4 border-b border-gray-700">
+            <h3 className="text-white font-bold text-lg">Episodes</h3>
+            {/* Season Selector */}
+            {allSeasons && allSeasons.length > 0 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                {allSeasons.map((s) => (
+                  <button
+                    key={s.season_number}
+                    onClick={() => handleSeasonClick(s.season_number)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                      selectedSeason === s.season_number
+                        ? 'bg-netflix-red text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Season {s.season_number}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {seasonData.episodes?.map((ep) => (
+              <button
+                key={ep.id}
+                onClick={() => handleEpisodeClick(ep)}
+                className={`w-full flex gap-3 p-3 rounded-lg transition-colors mb-2 ${
+                  episode === ep.episode_number && season === selectedSeason
+                    ? 'bg-netflix-red/20 ring-1 ring-netflix-red'
+                    : 'hover:bg-white/10'
+                }`}
+              >
+                <div className="w-24 h-14 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                  {ep.still_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w185${ep.still_path}`}
+                      alt={ep.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-sm">E{ep.episode_number}</span>
+                    {episode === ep.episode_number && season === selectedSeason && (
+                      <span className="text-xs bg-netflix-red px-1.5 py-0.5 rounded text-white">Playing</span>
+                    )}
+                  </div>
+                  <p className="text-white text-sm font-medium truncate">{ep.name}</p>
+                  <p className="text-gray-500 text-xs">{ep.runtime ? `${ep.runtime}m` : ''}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="p-3 border-t border-gray-700 bg-black/30">
+            <p className="text-gray-500 text-xs text-center">
+              Press <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">E</kbd> to toggle episode list
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Video Player */}
       <div className="flex-1 relative">
@@ -367,7 +509,7 @@ const VideoPlayer = ({
       {type === 'tv' && (hasPreviousEpisode || hasNextEpisode) && (
         <div
           className={`absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0'
+            showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
           <div className="flex items-center justify-center gap-4">
@@ -403,10 +545,13 @@ const VideoPlayer = ({
           showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <p>
-          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded">F</kbd> fullscreen •
-          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded ml-2">S</kbd> servers •
-          <kbd className="px-1.5 py-0.5 bg-gray-800 rounded ml-2">ESC</kbd> exit
+        <p className="space-x-2">
+          <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">F</kbd> fullscreen</span>
+          <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">S</kbd> servers</span>
+          {type === 'tv' && <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">E</kbd> episodes</span>}
+          {type === 'tv' && <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">N</kbd> next</span>}
+          {type === 'tv' && <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">P</kbd> previous</span>}
+          <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">ESC</kbd> exit</span>
         </p>
       </div>
     </div>
