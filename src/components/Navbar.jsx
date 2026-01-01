@@ -6,6 +6,28 @@ import NotificationCenter from './NotificationCenter';
 import DownloadManager from './DownloadManager';
 import { COUNTRIES } from '../pages/Browse';
 
+// Genres list for navbar dropdown
+const GENRES = [
+  { name: 'Action', slug: 'action' },
+  { name: 'Adventure', slug: 'adventure' },
+  { name: 'Animation', slug: 'animation' },
+  { name: 'Comedy', slug: 'comedy' },
+  { name: 'Crime', slug: 'crime' },
+  { name: 'Documentary', slug: 'documentary' },
+  { name: 'Drama', slug: 'drama' },
+  { name: 'Family', slug: 'family' },
+  { name: 'Fantasy', slug: 'fantasy' },
+  { name: 'History', slug: 'history' },
+  { name: 'Horror', slug: 'horror' },
+  { name: 'Music', slug: 'music' },
+  { name: 'Mystery', slug: 'mystery' },
+  { name: 'Romance', slug: 'romance' },
+  { name: 'Sci-Fi', slug: 'sci-fi' },
+  { name: 'Thriller', slug: 'thriller' },
+  { name: 'War', slug: 'war' },
+  { name: 'Western', slug: 'western' },
+];
+
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -29,6 +51,62 @@ const GlobeIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
+
+// Genres Dropdown Component
+const GenresDropdown = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleGenreSelect = (genre) => {
+    navigate(`/browse/${genre.slug}`);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-1 text-sm transition-colors duration-300 ${
+          isOpen ? 'text-white font-medium' : 'text-gray-300 hover:text-gray-100'
+        }`}
+      >
+        <span>Genres</span>
+        <ChevronDownIcon />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[400px] max-w-[95vw]">
+          <div className="mb-3 pb-2 border-b border-gray-700">
+            <h3 className="text-white font-semibold">Browse by Genre</h3>
+            <p className="text-gray-400 text-sm">Select a genre to explore</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+            {GENRES.map((genre) => (
+              <button
+                key={genre.slug}
+                onClick={() => handleGenreSelect(genre)}
+                className="px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white text-sm"
+              >
+                {genre.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Country Dropdown Component
 const CountryDropdown = () => {
@@ -65,20 +143,19 @@ const CountryDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[500px] max-w-[95vw]">
+        <div className="absolute top-full right-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[400px] max-w-[95vw]">
           <div className="mb-3 pb-2 border-b border-gray-700">
             <h3 className="text-white font-semibold">Browse by Country</h3>
-            <p className="text-gray-400 text-sm">Select a country to see movies and shows from that region</p>
+            <p className="text-gray-400 text-sm">Select a country to see regional content</p>
           </div>
-          <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
             {COUNTRIES.map((country) => (
               <button
                 key={country.code}
                 onClick={() => handleCountrySelect(country)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 hover:scale-105 text-gray-300 hover:text-white"
+                className="px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white text-sm"
               >
-                <span className="text-lg">{country.flag}</span>
-                <span className="text-sm truncate">{country.name}</span>
+                {country.name}
               </button>
             ))}
           </div>
@@ -124,7 +201,6 @@ const Navbar = ({ onSearch }) => {
 
   const navLinks = [
     { path: '/', label: 'Home' },
-    { path: '/browse', label: 'Browse' },
     { path: '/tv-shows', label: 'TV Shows' },
     { path: '/movies', label: 'Movies' },
     { path: '/new', label: 'New & Popular' },
@@ -165,6 +241,10 @@ const Navbar = ({ onSearch }) => {
                 </NavLink>
               </li>
             ))}
+            {/* Genres Dropdown in Nav */}
+            <li>
+              <GenresDropdown />
+            </li>
             {/* Country Dropdown in Nav */}
             <li>
               <CountryDropdown />
@@ -177,12 +257,12 @@ const Navbar = ({ onSearch }) => {
               className="flex items-center gap-1 text-sm text-white"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
-              Browse <ChevronDownIcon />
+              Menu <ChevronDownIcon />
             </button>
 
             {/* Mobile Dropdown */}
             {showMobileMenu && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-black/95 border border-gray-700 rounded">
+              <div className="absolute top-full left-0 mt-2 w-72 bg-black/95 border border-gray-700 rounded max-h-[80vh] overflow-y-auto">
                 <ul className="py-2">
                   {navLinks.map((link) => (
                     <li key={link.path}>
@@ -196,17 +276,31 @@ const Navbar = ({ onSearch }) => {
                     </li>
                   ))}
                   <li className="border-t border-gray-700 mt-2 pt-2">
-                    <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Browse by Country</span>
+                    <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Genres</span>
+                    <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                      {GENRES.slice(0, 12).map((genre) => (
+                        <Link
+                          key={genre.slug}
+                          to={`/browse/${genre.slug}`}
+                          className="px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded"
+                          onClick={() => setShowMobileMenu(false)}
+                        >
+                          {genre.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </li>
+                  <li className="border-t border-gray-700 mt-2 pt-2">
+                    <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Countries</span>
                     <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                       {COUNTRIES.slice(0, 8).map((country) => (
                         <Link
                           key={country.code}
                           to={`/browse?country=${country.code}`}
-                          className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded"
+                          className="px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded"
                           onClick={() => setShowMobileMenu(false)}
                         >
-                          <span>{country.flag}</span>
-                          <span className="truncate">{country.name}</span>
+                          {country.name}
                         </Link>
                       ))}
                     </div>

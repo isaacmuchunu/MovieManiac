@@ -57,9 +57,9 @@ const Movies = () => {
   };
 
   return (
-    <div className="min-h-screen bg-netflix-black pt-20">
+    <div className="min-h-screen bg-netflix-black pt-24 md:pt-28 pb-12">
       {/* Header */}
-      <div className="px-4 md:px-14 py-8">
+      <div className="px-4 md:px-14 py-8 mb-4">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Movies</h1>
         <p className="text-gray-400">
           Explore our collection of movies across all genres
@@ -67,7 +67,7 @@ const Movies = () => {
       </div>
 
       {/* Movie Rows by Genre */}
-      <div className="space-y-2">
+      <div className="space-y-8 md:space-y-10">
         <MovieRow
           title="Popular Movies"
           type="popular"

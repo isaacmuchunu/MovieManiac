@@ -45,7 +45,7 @@ const Home = () => {
       <Hero onMoreInfo={handleMovieClick} />
 
       {/* Movie Rows - positioned to overlap hero */}
-      <div className="relative -mt-32 z-10 space-y-8 pb-16">
+      <div className="relative -mt-32 z-10 space-y-10 md:space-y-12 pb-16">
         {/* Trending Now */}
         <MovieRow
           title="Trending Now"

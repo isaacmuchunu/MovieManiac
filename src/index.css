@@ -93,7 +93,7 @@ body {
 
 /* Netflix-style row */
 .movie-row {
-  @apply flex gap-2 overflow-x-auto pb-12 pt-4 px-4 md:px-14;
+  @apply flex gap-3 md:gap-4 overflow-x-auto pb-12 pt-4 px-4 md:px-14;
 }
 
 /* Section spacing */
@@ -103,7 +103,27 @@ body {
 
 /* Card spacing */
 .card-gap {
-  @apply gap-3 md:gap-4;
+  @apply gap-4 md:gap-6;
+}
+
+/* Page content spacing - ensures content is below fixed navbar */
+.page-content {
+  @apply pt-20 md:pt-24;
+}
+
+/* Content container with consistent padding */
+.content-container {
+  @apply px-4 md:px-8 lg:px-14;
+}
+
+/* Uniform element gaps */
+.element-gap {
+  @apply gap-4 md:gap-6 lg:gap-8;
+}
+
+/* Row spacing between movie rows */
+.row-spacing {
+  @apply my-6 md:my-8 lg:my-10;
 }
 
 /* Gradient overlays for rows */
