@@ -85,9 +85,9 @@ const TVShows = () => {
   };
 
   const TVRow = ({ title, showsList }) => (
-    <div className="mb-8">
+    <div className="mb-6">
       <h2 className="text-xl md:text-2xl font-semibold text-white mb-4 px-4 md:px-14">{title}</h2>
-      <div className="flex gap-2 overflow-x-auto pb-4 px-4 md:px-14 hide-scrollbar">
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 px-4 md:px-14 hide-scrollbar">
         {showsList.map((show) => (
           <TVShowCard
             key={show.id}
@@ -127,9 +127,9 @@ const TVShows = () => {
   }
 
   return (
-    <div className="min-h-screen bg-netflix-black pt-20">
+    <div className="min-h-screen bg-netflix-black pt-24 md:pt-28 pb-12">
       {/* Header */}
-      <div className="px-4 md:px-14 py-8">
+      <div className="px-4 md:px-14 py-8 mb-4">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">TV Shows</h1>
         <p className="text-gray-400">
           Discover the best TV shows from around the world
@@ -137,7 +137,7 @@ const TVShows = () => {
       </div>
 
       {/* TV Show Rows */}
-      <div className="space-y-2">
+      <div className="space-y-8 md:space-y-10">
         <TVRow title="Popular TV Shows" showsList={shows.popular} />
         <TVRow title="Top Rated" showsList={shows.topRated} />
         <TVRow title="Currently On Air" showsList={shows.onAir} />

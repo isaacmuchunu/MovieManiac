@@ -347,9 +347,9 @@ function Browse() {
   const hasActiveFilters = selectedType !== 'all' || selectedCountry || selectedRating !== 'all' || selectedYear;
 
   return (
-    <div className="min-h-screen bg-netflix-black pt-20 px-4 md:px-12">
+    <div className="min-h-screen bg-netflix-black pt-24 md:pt-28 px-4 md:px-8 lg:px-14 pb-12">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-10">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4 flex-wrap">
             {/* Genre Dropdown */}
@@ -361,7 +361,6 @@ function Browse() {
             {/* Country Badge */}
             {currentCountry && (
               <div className="flex items-center gap-2 bg-netflix-red text-white px-4 py-2 rounded-lg">
-                <span>{currentCountry.flag}</span>
                 <span>{currentCountry.name}</span>
                 <button
                   onClick={() => {
@@ -404,7 +403,7 @@ function Browse() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-800">
+        <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl p-6 mb-10 border border-gray-800">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-white font-semibold text-lg">Filter & Sort</h3>
             {hasActiveFilters && (
@@ -454,7 +453,7 @@ function Browse() {
                 <option value="">All Countries</option>
                 {COUNTRIES.map((country) => (
                   <option key={country.code} value={country.code}>
-                    {country.flag} {country.name}
+                    {country.name}
                   </option>
                 ))}
               </select>
@@ -527,7 +526,7 @@ function Browse() {
       ) : (
         <>
           {content.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {content.map((item) => (
                 <div key={item.id} className="relative group">
                   <MovieCard movie={item} />
