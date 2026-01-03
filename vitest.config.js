@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.js'],
+    setupFiles: ['./src/setupTests.js'],
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['node_modules', 'dist'],
     coverage: {
@@ -14,11 +14,17 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/',
-        'src/test/',
+        'src/setupTests.js',
         '**/*.d.ts',
-        '**/*.config.*',
-        '**/index.jsx'
-      ]
-    }
-  }
+        '**/*.config.{js,ts}',
+        '**/types/**',
+      ],
+    },
+    css: true,
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
 });

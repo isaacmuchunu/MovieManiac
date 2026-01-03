@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MovieRow from './MovieRow';
+import { tmdbApi } from '../lib/tmdbProxy';
 
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
 
 const PlayIcon = () => (
@@ -49,24 +49,18 @@ const MovieDetail = () => {
     const fetchMovieData = async () => {
       setLoading(true);
       try {
-        const [movieRes, creditsRes, videosRes, similarRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=en-US`),
-          fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${API_KEY}&language=en-US`),
-          fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${API_KEY}&language=en-US`),
-          fetch(`https://api.themoviedb.org/3/movie/${movieId}/similar?api_key=${API_KEY}&language=en-US&page=1`)
-        ]);
-
+        // Fetch all movie data in parallel using the secure proxy
         const [movieData, creditsData, videosData, similarData] = await Promise.all([
-          movieRes.json(),
-          creditsRes.json(),
-          videosRes.json(),
-          similarRes.json()
+          tmdbApi.getMovieDetails(movieId),
+          tmdbApi.getMovieCredits(movieId),
+          tmdbApi.getMovieVideos(movieId),
+          tmdbApi.discoverMovies({ similar: movieId, page: 1 })
         ]);
 
         setMovie(movieData);
         setCredits(creditsData);
         setVideos(videosData.results?.filter(v => v.type === 'Trailer') || []);
-        setSimilar(similarData.results?.slice(0, 20) || []);
+        setSimilar(similarData.results?.slice(0, 20) || movieData.similar?.results?.slice(0, 20) || []);
 
         // Check if in my list
         const savedList = localStorage.getItem('moovie-mylist');

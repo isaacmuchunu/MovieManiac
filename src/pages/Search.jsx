@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import MovieModal from '../components/MovieModal';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -21,10 +20,7 @@ const Search = () => {
 
       setLoading(true);
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
-        );
-        const data = await response.json();
+        const data = await tmdbApi.searchMovies(query, 1);
         setResults(data.results || []);
       } catch (error) {
         console.error('Error searching movies:', error);

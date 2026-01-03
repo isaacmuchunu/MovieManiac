@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import MovieCard from '../components/MovieCard';
 import MovieModal from '../components/MovieModal';
+import { tmdbApi } from '../lib/tmdbProxy';
 
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
 const TVShows = () => {
@@ -18,18 +18,11 @@ const TVShows = () => {
   useEffect(() => {
     const fetchShows = async () => {
       try {
-        const [popular, topRated, onAir, airingToday] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=en-US&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${API_KEY}&language=en-US&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/on_the_air?api_key=${API_KEY}&language=en-US&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/airing_today?api_key=${API_KEY}&language=en-US&page=1`)
-        ]);
-
         const [popularData, topRatedData, onAirData, airingTodayData] = await Promise.all([
-          popular.json(),
-          topRated.json(),
-          onAir.json(),
-          airingToday.json()
+          tmdbApi.getPopularTvShows(1),
+          tmdbApi.getTopRatedTvShows(1),
+          tmdbApi.getOnTheAirTvShows(1),
+          tmdbApi.getAiringTodayTvShows(1)
         ]);
 
         setShows({

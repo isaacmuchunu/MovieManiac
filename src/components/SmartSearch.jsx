@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import debounce from 'lodash/debounce';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const SmartSearch = ({ onClose, onSelect }) => {
   const navigate = useNavigate();
@@ -45,16 +44,10 @@ const SmartSearch = ({ onClose, onSelect }) => {
 
       setLoading(true);
       try {
-        const [moviesRes, tvRes, peopleRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=1`),
-          fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=1`),
-          fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=1`),
-        ]);
-
         const [movies, tv, people] = await Promise.all([
-          moviesRes.json(),
-          tvRes.json(),
-          peopleRes.json(),
+          tmdbApi.searchMovies(searchQuery, 1),
+          tmdbApi.searchTvShows(searchQuery, 1),
+          tmdbApi.searchPerson(searchQuery, 1),
         ]);
 
         setResults({

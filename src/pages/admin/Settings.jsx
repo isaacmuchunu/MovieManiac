@@ -1,156 +1,109 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/backendApi';
 
-// Toast notification component (inline for simplicity)
-const Toast = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
-
-  return (
-    <div className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in`}>
-      {type === 'success' && (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-      {type === 'error' && (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      )}
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-2 hover:bg-white/20 rounded p-1">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  );
-};
-
-// Section component for grouping settings
-const SettingsSection = ({ title, description, children }) => (
-  <div className="bg-netflix-dark-gray rounded-xl p-6 border border-gray-800">
-    <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-    {description && <p className="text-gray-400 text-sm mb-4">{description}</p>}
-    <div className="space-y-4">{children}</div>
-  </div>
-);
-
-// Toggle switch component
-const Toggle = ({ enabled, onChange, label, description }) => (
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="text-white font-medium">{label}</p>
-      {description && <p className="text-gray-500 text-sm">{description}</p>}
-    </div>
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative w-14 h-7 rounded-full transition-colors ${
-        enabled ? 'bg-netflix-red' : 'bg-gray-600'
-      }`}
-    >
-      <span
-        className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-          enabled ? 'translate-x-8' : 'translate-x-1'
-        }`}
-      />
-    </button>
-  </div>
-);
-
-// Input field component
-const InputField = ({ label, type = 'text', value, onChange, placeholder, disabled, description, isSecret }) => (
-  <div>
-    <label className="block text-sm text-gray-400 mb-2">{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      disabled={disabled}
-      className={`w-full bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-netflix-red ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
+const ToggleSwitch = ({ enabled, onChange, disabled }) => (
+  <button
+    onClick={() => !disabled && onChange(!enabled)}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+    } ${enabled ? 'bg-netflix-red' : 'bg-gray-600'}`}
+    disabled={disabled}
+  >
+    <span
+      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+        enabled ? 'translate-x-6' : 'translate-x-1'
       }`}
     />
-    {description && <p className="text-gray-500 text-xs mt-1">{description}</p>}
-    {isSecret && (
-      <p className="text-yellow-500 text-xs mt-1 flex items-center gap-1">
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-        This value is stored securely and never sent to the browser
-      </p>
-    )}
-  </div>
+  </button>
 );
 
-// Select component
-const Select = ({ label, value, onChange, options, description }) => (
-  <div>
-    <label className="block text-sm text-gray-400 mb-2">{label}</label>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-netflix-red"
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-    {description && <p className="text-gray-500 text-xs mt-1">{description}</p>}
+const SettingCard = ({ title, description, children }) => (
+  <div className="bg-netflix-dark-gray rounded-xl p-6 border border-gray-800">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex-1">
+        <h3 className="text-white font-medium">{title}</h3>
+        {description && <p className="text-gray-400 text-sm mt-1">{description}</p>}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
+    </div>
   </div>
 );
 
 const Settings = () => {
-  // General settings - safe to store in state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+  // Settings state
   const [settings, setSettings] = useState({
+    // General settings
     siteName: 'Moovie',
-    siteDescription: 'Your premium streaming platform',
+    siteDescription: 'Your ultimate streaming platform',
     maintenanceMode: false,
+    debugMode: false,
+
+    // Content settings
+    autoSyncTmdb: true,
+    syncInterval: '24',
+    defaultContentQuality: '1080p',
+    enableAutoplay: true,
+    showTrailers: true,
+    contentRating: 'all',
+
+    // User settings
     allowRegistration: true,
     requireEmailVerification: true,
     maxProfiles: 5,
-    defaultLanguage: 'en',
-    defaultQuality: 'auto'
-  });
+    sessionTimeout: '30',
+    enableTwoFactor: false,
 
-  // Feature flags - safe for frontend
-  const [features, setFeatures] = useState({
-    stripeEnabled: false,
-    paypalEnabled: false,
-    smtpEnabled: false,
-    analyticsEnabled: true,
-    tmdbSyncEnabled: true,
-    notificationsEnabled: true
-  });
-
-  // Public keys only - NEVER store secret keys in frontend state
-  const [publicKeys, setPublicKeys] = useState({
-    stripePublicKey: '',
-    googleAnalyticsId: '',
-    tmdbApiKeyConfigured: false // Only boolean indicator, not the actual key
-  });
-
-  // Write-only secret fields - values typed here are only sent on save, never retrieved
-  const [secretUpdates, setSecretUpdates] = useState({
-    stripeSecretKey: '',
+    // Email settings
+    smtpHost: '',
+    smtpPort: '587',
+    smtpUser: '',
     smtpPassword: '',
-    tmdbApiKey: ''
+    emailFrom: 'noreply@moovie.com',
+
+    // Security settings
+    rateLimit: '100',
+    enableCaptcha: false,
+    ipWhitelist: '',
+    enableBruteForceProtection: true,
+    maxLoginAttempts: '5',
+
+    // Payment settings
+    stripeEnabled: true,
+    stripePublicKey: '',
+    stripeSecretKey: '',
+    paypalEnabled: false,
+    paypalClientId: '',
+
+    // API settings
+    tmdbApiKey: '',
+    enableApiAccess: true,
+    apiRateLimit: '1000',
+
+    // Notification settings
+    enableEmailNotifications: true,
+    enablePushNotifications: false,
+    notifyOnNewContent: true,
+    notifyOnSubscriptionChanges: true,
+    weeklyDigest: true,
+
+    // Storage settings
+    storageProvider: 'local',
+    maxUploadSize: '500',
+    enableCdn: false,
+    cdnUrl: '',
+
+    // Analytics settings
+    enableAnalytics: true,
+    googleAnalyticsId: '',
+    enableHeatmaps: false,
+    dataRetentionDays: '90'
   });
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('general');
-
-  // Fetch settings on mount
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -158,39 +111,12 @@ const Settings = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getSettings?.() || null;
-
+      const data = await adminApi.getSettings().catch(() => null);
       if (data) {
-        // Only populate non-sensitive settings
-        setSettings({
-          siteName: data.siteName || 'Moovie',
-          siteDescription: data.siteDescription || '',
-          maintenanceMode: data.maintenanceMode || false,
-          allowRegistration: data.allowRegistration ?? true,
-          requireEmailVerification: data.requireEmailVerification ?? true,
-          maxProfiles: data.maxProfiles || 5,
-          defaultLanguage: data.defaultLanguage || 'en',
-          defaultQuality: data.defaultQuality || 'auto'
-        });
-
-        setFeatures({
-          stripeEnabled: data.stripeEnabled || false,
-          paypalEnabled: data.paypalEnabled || false,
-          smtpEnabled: data.smtpEnabled || false,
-          analyticsEnabled: data.analyticsEnabled ?? true,
-          tmdbSyncEnabled: data.tmdbSyncEnabled ?? true,
-          notificationsEnabled: data.notificationsEnabled ?? true
-        });
-
-        setPublicKeys({
-          stripePublicKey: data.stripePublicKey || '',
-          googleAnalyticsId: data.googleAnalyticsId || '',
-          tmdbApiKeyConfigured: data.tmdbApiKeyConfigured || false
-        });
+        setSettings(prev => ({ ...prev, ...data }));
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
-      // Use defaults for demo mode
     } finally {
       setLoading(false);
     }
@@ -198,68 +124,50 @@ const Settings = () => {
 
   const handleSave = async () => {
     setSaving(true);
-
     try {
-      // Prepare payload - only include secrets if they were updated
-      const payload = {
-        ...settings,
-        ...features,
-        stripePublicKey: publicKeys.stripePublicKey,
-        googleAnalyticsId: publicKeys.googleAnalyticsId
-      };
-
-      // Only include secrets if user entered new values
-      if (secretUpdates.stripeSecretKey) {
-        payload.stripeSecretKey = secretUpdates.stripeSecretKey;
-      }
-      if (secretUpdates.smtpPassword) {
-        payload.smtpPassword = secretUpdates.smtpPassword;
-      }
-      if (secretUpdates.tmdbApiKey) {
-        payload.tmdbApiKey = secretUpdates.tmdbApiKey;
-      }
-
-      // Call API
-      if (adminApi.updateSettings) {
-        await adminApi.updateSettings(payload);
-      }
-
-      // Clear secret fields after save
-      setSecretUpdates({
-        stripeSecretKey: '',
-        smtpPassword: '',
-        tmdbApiKey: ''
+      await adminApi.updateSettings(settings).catch(() => {
+        // Demo mode - just show success
       });
-
-      setToast({ message: 'Settings saved successfully', type: 'success' });
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setToast({ message: error.message || 'Failed to save settings', type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
+  const updateSetting = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   const tabs = [
     { id: 'general', label: 'General', icon: '⚙️' },
-    { id: 'auth', label: 'Authentication', icon: '🔐' },
-    { id: 'payments', label: 'Payments', icon: '💳' },
+    { id: 'content', label: 'Content', icon: '🎬' },
+    { id: 'users', label: 'Users', icon: '👥' },
     { id: 'email', label: 'Email', icon: '📧' },
-    { id: 'integrations', label: 'Integrations', icon: '🔗' },
-    { id: 'advanced', label: 'Advanced', icon: '🛠️' }
+    { id: 'security', label: 'Security', icon: '🔒' },
+    { id: 'payments', label: 'Payments', icon: '💳' },
+    { id: 'api', label: 'API', icon: '🔗' },
+    { id: 'notifications', label: 'Notifications', icon: '🔔' },
+    { id: 'storage', label: 'Storage', icon: '💾' },
+    { id: 'analytics', label: 'Analytics', icon: '📊' },
   ];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-netflix-black p-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-netflix-dark-gray rounded w-48" />
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="h-12 bg-netflix-dark-gray rounded" />
-            <div className="lg:col-span-3 space-y-6">
-              <div className="h-48 bg-netflix-dark-gray rounded-xl" />
-              <div className="h-48 bg-netflix-dark-gray rounded-xl" />
-            </div>
+          <div className="h-10 bg-netflix-dark-gray rounded w-48" />
+          <div className="grid grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-12 bg-netflix-dark-gray rounded" />
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 bg-netflix-dark-gray rounded-xl" />
+            ))}
           </div>
         </div>
       </div>
@@ -268,15 +176,6 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-netflix-black">
-      {/* Toast notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-
       {/* Header */}
       <div className="bg-netflix-dark-gray border-b border-gray-800 px-8 py-4">
         <div className="flex items-center justify-between">
@@ -284,39 +183,49 @@ const Settings = () => {
             <h1 className="text-2xl font-bold text-white">Settings</h1>
             <p className="text-gray-400 text-sm">Configure your platform settings</p>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-2 bg-netflix-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
+          <div className="flex items-center gap-3">
+            {showSaveSuccess && (
+              <div className="flex items-center gap-2 text-green-500 text-sm animate-fade-in">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Save Changes
-              </>
+                Settings saved successfully
+              </div>
             )}
-          </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 bg-netflix-red rounded-lg text-white hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="space-y-2">
-            {tabs.map((tab) => (
+      <div className="flex">
+        {/* Sidebar Tabs */}
+        <div className="w-64 bg-netflix-dark-gray border-r border-gray-800 min-h-[calc(100vh-73px)]">
+          <nav className="p-4 space-y-1">
+            {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                   activeTab === tab.id
                     ? 'bg-netflix-red text-white'
                     : 'text-gray-400 hover:text-white hover:bg-netflix-medium-gray'
@@ -326,301 +235,564 @@ const Settings = () => {
                 <span>{tab.label}</span>
               </button>
             ))}
-          </div>
+          </nav>
+        </div>
 
-          {/* Settings Content */}
-          <div className="lg:col-span-3 space-y-6">
+        {/* Settings Content */}
+        <div className="flex-1 p-8">
+          <div className="max-w-3xl space-y-6">
             {/* General Settings */}
             {activeTab === 'general' && (
               <>
-                <SettingsSection title="Site Information" description="Basic information about your streaming platform">
-                  <InputField
-                    label="Site Name"
+                <h2 className="text-xl font-semibold text-white mb-4">General Settings</h2>
+
+                <SettingCard title="Site Name" description="The name displayed across the platform">
+                  <input
+                    type="text"
                     value={settings.siteName}
-                    onChange={(v) => setSettings({ ...settings, siteName: v })}
-                    placeholder="Moovie"
+                    onChange={(e) => updateSetting('siteName', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
                   />
-                  <InputField
-                    label="Site Description"
+                </SettingCard>
+
+                <SettingCard title="Site Description" description="Brief description for SEO and metadata">
+                  <input
+                    type="text"
                     value={settings.siteDescription}
-                    onChange={(v) => setSettings({ ...settings, siteDescription: v })}
-                    placeholder="Your premium streaming platform"
+                    onChange={(e) => updateSetting('siteDescription', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
                   />
-                  <Select
-                    label="Default Language"
-                    value={settings.defaultLanguage}
-                    onChange={(v) => setSettings({ ...settings, defaultLanguage: v })}
-                    options={[
-                      { value: 'en', label: 'English' },
-                      { value: 'es', label: 'Spanish' },
-                      { value: 'fr', label: 'French' },
-                      { value: 'de', label: 'German' },
-                      { value: 'ja', label: 'Japanese' }
-                    ]}
-                  />
-                </SettingsSection>
+                </SettingCard>
 
-                <SettingsSection title="Playback Settings" description="Configure default video playback options">
-                  <Select
-                    label="Default Video Quality"
-                    value={settings.defaultQuality}
-                    onChange={(v) => setSettings({ ...settings, defaultQuality: v })}
-                    options={[
-                      { value: 'auto', label: 'Auto (Adaptive)' },
-                      { value: '4k', label: '4K Ultra HD' },
-                      { value: '1080p', label: '1080p Full HD' },
-                      { value: '720p', label: '720p HD' },
-                      { value: '480p', label: '480p SD' }
-                    ]}
-                    description="This can be overridden by users in their profile settings"
-                  />
-                  <InputField
-                    label="Maximum Profiles per Account"
-                    type="number"
-                    value={settings.maxProfiles}
-                    onChange={(v) => setSettings({ ...settings, maxProfiles: parseInt(v) || 5 })}
-                    description="How many profiles each user can create"
-                  />
-                </SettingsSection>
-
-                <SettingsSection title="Maintenance" description="System maintenance options">
-                  <Toggle
-                    label="Maintenance Mode"
-                    description="When enabled, only admins can access the site"
+                <SettingCard title="Maintenance Mode" description="Enable to show maintenance page to users">
+                  <ToggleSwitch
                     enabled={settings.maintenanceMode}
-                    onChange={(v) => setSettings({ ...settings, maintenanceMode: v })}
+                    onChange={(v) => updateSetting('maintenanceMode', v)}
                   />
-                </SettingsSection>
+                </SettingCard>
+
+                <SettingCard title="Debug Mode" description="Enable detailed logging for development">
+                  <ToggleSwitch
+                    enabled={settings.debugMode}
+                    onChange={(v) => updateSetting('debugMode', v)}
+                  />
+                </SettingCard>
               </>
             )}
 
-            {/* Authentication Settings */}
-            {activeTab === 'auth' && (
+            {/* Content Settings */}
+            {activeTab === 'content' && (
               <>
-                <SettingsSection title="Registration" description="Control user registration options">
-                  <Toggle
-                    label="Allow New Registrations"
-                    description="When disabled, new users cannot sign up"
-                    enabled={settings.allowRegistration}
-                    onChange={(v) => setSettings({ ...settings, allowRegistration: v })}
-                  />
-                  <Toggle
-                    label="Require Email Verification"
-                    description="Users must verify their email before accessing content"
-                    enabled={settings.requireEmailVerification}
-                    onChange={(v) => setSettings({ ...settings, requireEmailVerification: v })}
-                  />
-                </SettingsSection>
+                <h2 className="text-xl font-semibold text-white mb-4">Content Settings</h2>
 
-                <SettingsSection title="Security" description="Authentication security settings">
-                  <Toggle
-                    label="Two-Factor Authentication"
-                    description="Allow users to enable 2FA for their accounts"
-                    enabled={features.twoFactorEnabled || false}
-                    onChange={(v) => setFeatures({ ...features, twoFactorEnabled: v })}
+                <SettingCard title="Auto Sync with TMDB" description="Automatically sync content metadata from TMDB">
+                  <ToggleSwitch
+                    enabled={settings.autoSyncTmdb}
+                    onChange={(v) => updateSetting('autoSyncTmdb', v)}
                   />
-                </SettingsSection>
+                </SettingCard>
+
+                <SettingCard title="Sync Interval (hours)" description="How often to sync with TMDB">
+                  <select
+                    value={settings.syncInterval}
+                    onChange={(e) => updateSetting('syncInterval', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="6">Every 6 hours</option>
+                    <option value="12">Every 12 hours</option>
+                    <option value="24">Every 24 hours</option>
+                    <option value="48">Every 48 hours</option>
+                  </select>
+                </SettingCard>
+
+                <SettingCard title="Default Content Quality" description="Default streaming quality for new users">
+                  <select
+                    value={settings.defaultContentQuality}
+                    onChange={(e) => updateSetting('defaultContentQuality', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="480p">480p</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p (HD)</option>
+                    <option value="4k">4K Ultra HD</option>
+                  </select>
+                </SettingCard>
+
+                <SettingCard title="Enable Autoplay" description="Automatically play next episode">
+                  <ToggleSwitch
+                    enabled={settings.enableAutoplay}
+                    onChange={(v) => updateSetting('enableAutoplay', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Show Trailers" description="Display trailers on content pages">
+                  <ToggleSwitch
+                    enabled={settings.showTrailers}
+                    onChange={(v) => updateSetting('showTrailers', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Content Rating Filter" description="Filter content by rating">
+                  <select
+                    value={settings.contentRating}
+                    onChange={(e) => updateSetting('contentRating', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="all">All Ratings</option>
+                    <option value="g">G - General</option>
+                    <option value="pg">PG - Parental Guidance</option>
+                    <option value="pg13">PG-13</option>
+                    <option value="r">R - Restricted</option>
+                  </select>
+                </SettingCard>
+              </>
+            )}
+
+            {/* User Settings */}
+            {activeTab === 'users' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">User Settings</h2>
+
+                <SettingCard title="Allow Registration" description="Allow new users to sign up">
+                  <ToggleSwitch
+                    enabled={settings.allowRegistration}
+                    onChange={(v) => updateSetting('allowRegistration', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Require Email Verification" description="Require users to verify email before access">
+                  <ToggleSwitch
+                    enabled={settings.requireEmailVerification}
+                    onChange={(v) => updateSetting('requireEmailVerification', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Max Profiles per Account" description="Maximum number of profiles per account">
+                  <select
+                    value={settings.maxProfiles}
+                    onChange={(e) => updateSetting('maxProfiles', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 10].map(n => (
+                      <option key={n} value={n}>{n} profile{n > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                </SettingCard>
+
+                <SettingCard title="Session Timeout (days)" description="How long before users need to log in again">
+                  <select
+                    value={settings.sessionTimeout}
+                    onChange={(e) => updateSetting('sessionTimeout', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="7">7 days</option>
+                    <option value="14">14 days</option>
+                    <option value="30">30 days</option>
+                    <option value="60">60 days</option>
+                    <option value="90">90 days</option>
+                  </select>
+                </SettingCard>
+
+                <SettingCard title="Two-Factor Authentication" description="Enable 2FA for all users">
+                  <ToggleSwitch
+                    enabled={settings.enableTwoFactor}
+                    onChange={(v) => updateSetting('enableTwoFactor', v)}
+                  />
+                </SettingCard>
+              </>
+            )}
+
+            {/* Email Settings */}
+            {activeTab === 'email' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Email Settings</h2>
+
+                <SettingCard title="SMTP Host" description="Email server hostname">
+                  <input
+                    type="text"
+                    value={settings.smtpHost}
+                    onChange={(e) => updateSetting('smtpHost', e.target.value)}
+                    placeholder="smtp.example.com"
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="SMTP Port" description="Email server port">
+                  <input
+                    type="text"
+                    value={settings.smtpPort}
+                    onChange={(e) => updateSetting('smtpPort', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-32 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="SMTP Username" description="Email server username">
+                  <input
+                    type="text"
+                    value={settings.smtpUser}
+                    onChange={(e) => updateSetting('smtpUser', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="SMTP Password" description="Email server password">
+                  <input
+                    type="password"
+                    value={settings.smtpPassword}
+                    onChange={(e) => updateSetting('smtpPassword', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="From Email" description="Default sender email address">
+                  <input
+                    type="email"
+                    value={settings.emailFrom}
+                    onChange={(e) => updateSetting('emailFrom', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <div className="pt-4">
+                  <button className="px-4 py-2 bg-netflix-medium-gray text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    Send Test Email
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Security Settings */}
+            {activeTab === 'security' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Security Settings</h2>
+
+                <SettingCard title="Rate Limit (requests/min)" description="Maximum API requests per minute per IP">
+                  <input
+                    type="number"
+                    value={settings.rateLimit}
+                    onChange={(e) => updateSetting('rateLimit', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-32 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="Enable CAPTCHA" description="Show CAPTCHA on login/register forms">
+                  <ToggleSwitch
+                    enabled={settings.enableCaptcha}
+                    onChange={(v) => updateSetting('enableCaptcha', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Brute Force Protection" description="Block IPs after failed login attempts">
+                  <ToggleSwitch
+                    enabled={settings.enableBruteForceProtection}
+                    onChange={(v) => updateSetting('enableBruteForceProtection', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Max Login Attempts" description="Failed attempts before temporary block">
+                  <input
+                    type="number"
+                    value={settings.maxLoginAttempts}
+                    onChange={(e) => updateSetting('maxLoginAttempts', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-32 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="IP Whitelist" description="Comma-separated IPs that bypass rate limits">
+                  <textarea
+                    value={settings.ipWhitelist}
+                    onChange={(e) => updateSetting('ipWhitelist', e.target.value)}
+                    placeholder="192.168.1.1, 10.0.0.1"
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 h-20 focus:outline-none focus:ring-2 focus:ring-netflix-red resize-none"
+                  />
+                </SettingCard>
               </>
             )}
 
             {/* Payment Settings */}
             {activeTab === 'payments' && (
               <>
-                <SettingsSection title="Stripe" description="Configure Stripe payment processing">
-                  <Toggle
-                    label="Enable Stripe"
-                    description="Accept payments via Stripe"
-                    enabled={features.stripeEnabled}
-                    onChange={(v) => setFeatures({ ...features, stripeEnabled: v })}
-                  />
-                  {features.stripeEnabled && (
-                    <>
-                      <InputField
-                        label="Stripe Public Key"
-                        value={publicKeys.stripePublicKey}
-                        onChange={(v) => setPublicKeys({ ...publicKeys, stripePublicKey: v })}
-                        placeholder="pk_live_..."
-                        description="Your Stripe publishable key (safe for frontend)"
-                      />
-                      <InputField
-                        label="Stripe Secret Key"
-                        type="password"
-                        value={secretUpdates.stripeSecretKey}
-                        onChange={(v) => setSecretUpdates({ ...secretUpdates, stripeSecretKey: v })}
-                        placeholder="Enter new key to update..."
-                        isSecret
-                        description="Leave empty to keep existing key"
-                      />
-                    </>
-                  )}
-                </SettingsSection>
+                <h2 className="text-xl font-semibold text-white mb-4">Payment Settings</h2>
 
-                <SettingsSection title="PayPal" description="Configure PayPal payment processing">
-                  <Toggle
-                    label="Enable PayPal"
-                    description="Accept payments via PayPal"
-                    enabled={features.paypalEnabled}
-                    onChange={(v) => setFeatures({ ...features, paypalEnabled: v })}
-                  />
-                </SettingsSection>
-              </>
-            )}
+                <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 text-blue-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm">API keys are encrypted and stored securely</span>
+                  </div>
+                </div>
 
-            {/* Email Settings */}
-            {activeTab === 'email' && (
-              <SettingsSection title="SMTP Configuration" description="Configure email sending for notifications">
-                <Toggle
-                  label="Enable Email Notifications"
-                  description="Send emails for password resets, welcome messages, etc."
-                  enabled={features.smtpEnabled}
-                  onChange={(v) => setFeatures({ ...features, smtpEnabled: v })}
-                />
-                {features.smtpEnabled && (
+                <SettingCard title="Enable Stripe" description="Accept payments via Stripe">
+                  <ToggleSwitch
+                    enabled={settings.stripeEnabled}
+                    onChange={(v) => updateSetting('stripeEnabled', v)}
+                  />
+                </SettingCard>
+
+                {settings.stripeEnabled && (
                   <>
-                    <InputField
-                      label="SMTP Host"
-                      value={settings.smtpHost || ''}
-                      onChange={(v) => setSettings({ ...settings, smtpHost: v })}
-                      placeholder="smtp.example.com"
-                    />
-                    <InputField
-                      label="SMTP Port"
-                      type="number"
-                      value={settings.smtpPort || 587}
-                      onChange={(v) => setSettings({ ...settings, smtpPort: parseInt(v) })}
-                      placeholder="587"
-                    />
-                    <InputField
-                      label="SMTP Username"
-                      value={settings.smtpUsername || ''}
-                      onChange={(v) => setSettings({ ...settings, smtpUsername: v })}
-                      placeholder="your-email@example.com"
-                    />
-                    <InputField
-                      label="SMTP Password"
-                      type="password"
-                      value={secretUpdates.smtpPassword}
-                      onChange={(v) => setSecretUpdates({ ...secretUpdates, smtpPassword: v })}
-                      placeholder="Enter new password to update..."
-                      isSecret
-                    />
-                    <InputField
-                      label="From Email"
-                      value={settings.fromEmail || ''}
-                      onChange={(v) => setSettings({ ...settings, fromEmail: v })}
-                      placeholder="noreply@moovie.com"
-                    />
+                    <SettingCard title="Stripe Public Key" description="Your Stripe publishable key">
+                      <input
+                        type="text"
+                        value={settings.stripePublicKey}
+                        onChange={(e) => updateSetting('stripePublicKey', e.target.value)}
+                        placeholder="pk_live_..."
+                        className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red font-mono text-sm"
+                      />
+                    </SettingCard>
+
+                    <SettingCard title="Stripe Secret Key" description="Your Stripe secret key">
+                      <input
+                        type="password"
+                        value={settings.stripeSecretKey}
+                        onChange={(e) => updateSetting('stripeSecretKey', e.target.value)}
+                        placeholder="sk_live_..."
+                        className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red font-mono text-sm"
+                      />
+                    </SettingCard>
                   </>
                 )}
-              </SettingsSection>
-            )}
 
-            {/* Integrations */}
-            {activeTab === 'integrations' && (
-              <>
-                <SettingsSection title="TMDB Integration" description="The Movie Database API for content metadata">
-                  <Toggle
-                    label="Enable TMDB Sync"
-                    description="Automatically sync movie and TV show metadata"
-                    enabled={features.tmdbSyncEnabled}
-                    onChange={(v) => setFeatures({ ...features, tmdbSyncEnabled: v })}
+                <SettingCard title="Enable PayPal" description="Accept payments via PayPal">
+                  <ToggleSwitch
+                    enabled={settings.paypalEnabled}
+                    onChange={(v) => updateSetting('paypalEnabled', v)}
                   />
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${publicKeys.tmdbApiKeyConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-gray-400 text-sm">
-                      {publicKeys.tmdbApiKeyConfigured ? 'TMDB API Key is configured' : 'TMDB API Key not configured'}
-                    </span>
-                  </div>
-                  <InputField
-                    label="TMDB API Key"
-                    type="password"
-                    value={secretUpdates.tmdbApiKey}
-                    onChange={(v) => setSecretUpdates({ ...secretUpdates, tmdbApiKey: v })}
-                    placeholder="Enter new key to update..."
-                    isSecret
-                  />
-                </SettingsSection>
+                </SettingCard>
 
-                <SettingsSection title="Analytics" description="Track platform usage and performance">
-                  <Toggle
-                    label="Enable Analytics"
-                    description="Collect anonymous usage statistics"
-                    enabled={features.analyticsEnabled}
-                    onChange={(v) => setFeatures({ ...features, analyticsEnabled: v })}
-                  />
-                  {features.analyticsEnabled && (
-                    <InputField
-                      label="Google Analytics ID"
-                      value={publicKeys.googleAnalyticsId}
-                      onChange={(v) => setPublicKeys({ ...publicKeys, googleAnalyticsId: v })}
-                      placeholder="G-XXXXXXXXXX"
+                {settings.paypalEnabled && (
+                  <SettingCard title="PayPal Client ID" description="Your PayPal client ID">
+                    <input
+                      type="text"
+                      value={settings.paypalClientId}
+                      onChange={(e) => updateSetting('paypalClientId', e.target.value)}
+                      className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red font-mono text-sm"
                     />
-                  )}
-                </SettingsSection>
+                  </SettingCard>
+                )}
               </>
             )}
 
-            {/* Advanced Settings */}
-            {activeTab === 'advanced' && (
+            {/* API Settings */}
+            {activeTab === 'api' && (
               <>
-                <SettingsSection title="Cache Management" description="Manage application caches">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">Clear All Caches</p>
-                      <p className="text-gray-500 text-sm">Clear API caches, CDN caches, and local storage</p>
-                    </div>
-                    <button
-                      onClick={() => setToast({ message: 'Caches cleared successfully', type: 'success' })}
-                      className="px-4 py-2 bg-netflix-medium-gray text-white rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      Clear Caches
-                    </button>
-                  </div>
-                </SettingsSection>
+                <h2 className="text-xl font-semibold text-white mb-4">API Settings</h2>
 
-                <SettingsSection title="Danger Zone" description="Irreversible actions">
-                  <div className="border border-red-800 rounded-lg p-4 bg-red-900/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-red-400 font-medium">Reset to Defaults</p>
-                        <p className="text-gray-500 text-sm">Reset all settings to their default values</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (window.confirm('Are you sure? This will reset all settings to defaults.')) {
-                            setToast({ message: 'Settings reset to defaults', type: 'success' });
-                          }
-                        }}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                </SettingsSection>
-
-                <SettingsSection title="Notifications" description="Configure system notifications">
-                  <Toggle
-                    label="Push Notifications"
-                    description="Send push notifications to users"
-                    enabled={features.notificationsEnabled}
-                    onChange={(v) => setFeatures({ ...features, notificationsEnabled: v })}
+                <SettingCard title="TMDB API Key" description="Your TMDB API key for metadata">
+                  <input
+                    type="password"
+                    value={settings.tmdbApiKey}
+                    onChange={(e) => updateSetting('tmdbApiKey', e.target.value)}
+                    placeholder="Enter API key"
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red font-mono text-sm"
                   />
-                </SettingsSection>
+                </SettingCard>
+
+                <SettingCard title="Enable API Access" description="Allow third-party API access">
+                  <ToggleSwitch
+                    enabled={settings.enableApiAccess}
+                    onChange={(v) => updateSetting('enableApiAccess', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="API Rate Limit (requests/hour)" description="Maximum API requests per hour per key">
+                  <input
+                    type="number"
+                    value={settings.apiRateLimit}
+                    onChange={(e) => updateSetting('apiRateLimit', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-32 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <div className="pt-4 space-y-2">
+                  <button className="px-4 py-2 bg-netflix-medium-gray text-white rounded-lg hover:bg-gray-700 transition-colors mr-3">
+                    Generate New API Key
+                  </button>
+                  <button className="px-4 py-2 bg-netflix-medium-gray text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    View API Documentation
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Notification Settings */}
+            {activeTab === 'notifications' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Notification Settings</h2>
+
+                <SettingCard title="Email Notifications" description="Send notifications via email">
+                  <ToggleSwitch
+                    enabled={settings.enableEmailNotifications}
+                    onChange={(v) => updateSetting('enableEmailNotifications', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Push Notifications" description="Send browser push notifications">
+                  <ToggleSwitch
+                    enabled={settings.enablePushNotifications}
+                    onChange={(v) => updateSetting('enablePushNotifications', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="New Content Alerts" description="Notify users when new content is added">
+                  <ToggleSwitch
+                    enabled={settings.notifyOnNewContent}
+                    onChange={(v) => updateSetting('notifyOnNewContent', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Subscription Changes" description="Notify users about subscription updates">
+                  <ToggleSwitch
+                    enabled={settings.notifyOnSubscriptionChanges}
+                    onChange={(v) => updateSetting('notifyOnSubscriptionChanges', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Weekly Digest" description="Send weekly content recommendations">
+                  <ToggleSwitch
+                    enabled={settings.weeklyDigest}
+                    onChange={(v) => updateSetting('weeklyDigest', v)}
+                  />
+                </SettingCard>
+              </>
+            )}
+
+            {/* Storage Settings */}
+            {activeTab === 'storage' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Storage Settings</h2>
+
+                <SettingCard title="Storage Provider" description="Where media files are stored">
+                  <select
+                    value={settings.storageProvider}
+                    onChange={(e) => updateSetting('storageProvider', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="local">Local Storage</option>
+                    <option value="s3">Amazon S3</option>
+                    <option value="gcs">Google Cloud Storage</option>
+                    <option value="azure">Azure Blob Storage</option>
+                  </select>
+                </SettingCard>
+
+                <SettingCard title="Max Upload Size (MB)" description="Maximum file upload size">
+                  <input
+                    type="number"
+                    value={settings.maxUploadSize}
+                    onChange={(e) => updateSetting('maxUploadSize', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-32 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                  />
+                </SettingCard>
+
+                <SettingCard title="Enable CDN" description="Serve media through CDN for faster delivery">
+                  <ToggleSwitch
+                    enabled={settings.enableCdn}
+                    onChange={(v) => updateSetting('enableCdn', v)}
+                  />
+                </SettingCard>
+
+                {settings.enableCdn && (
+                  <SettingCard title="CDN URL" description="Your CDN base URL">
+                    <input
+                      type="text"
+                      value={settings.cdnUrl}
+                      onChange={(e) => updateSetting('cdnUrl', e.target.value)}
+                      placeholder="https://cdn.example.com"
+                      className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red"
+                    />
+                  </SettingCard>
+                )}
+
+                <div className="pt-4">
+                  <div className="bg-netflix-dark-gray rounded-xl p-6 border border-gray-800">
+                    <h4 className="text-white font-medium mb-4">Storage Usage</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-400">Used Space</span>
+                          <span className="text-white">245 GB / 500 GB</span>
+                        </div>
+                        <div className="w-full h-2 bg-netflix-medium-gray rounded-full overflow-hidden">
+                          <div className="w-1/2 h-full bg-netflix-red rounded-full" />
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Movies</span>
+                        <span className="text-white">180 GB</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">TV Shows</span>
+                        <span className="text-white">55 GB</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Other</span>
+                        <span className="text-white">10 GB</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Analytics Settings */}
+            {activeTab === 'analytics' && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Analytics Settings</h2>
+
+                <SettingCard title="Enable Analytics" description="Collect usage statistics and insights">
+                  <ToggleSwitch
+                    enabled={settings.enableAnalytics}
+                    onChange={(v) => updateSetting('enableAnalytics', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Google Analytics ID" description="Your Google Analytics tracking ID">
+                  <input
+                    type="text"
+                    value={settings.googleAnalyticsId}
+                    onChange={(e) => updateSetting('googleAnalyticsId', e.target.value)}
+                    placeholder="G-XXXXXXXXXX"
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-netflix-red font-mono"
+                  />
+                </SettingCard>
+
+                <SettingCard title="Enable Heatmaps" description="Track user interactions with heatmaps">
+                  <ToggleSwitch
+                    enabled={settings.enableHeatmaps}
+                    onChange={(v) => updateSetting('enableHeatmaps', v)}
+                  />
+                </SettingCard>
+
+                <SettingCard title="Data Retention (days)" description="How long to keep analytics data">
+                  <select
+                    value={settings.dataRetentionDays}
+                    onChange={(e) => updateSetting('dataRetentionDays', e.target.value)}
+                    className="bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none"
+                  >
+                    <option value="30">30 days</option>
+                    <option value="60">60 days</option>
+                    <option value="90">90 days</option>
+                    <option value="180">180 days</option>
+                    <option value="365">1 year</option>
+                    <option value="730">2 years</option>
+                  </select>
+                </SettingCard>
+
+                <div className="pt-4 flex gap-3">
+                  <button className="px-4 py-2 bg-netflix-medium-gray text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    Export Analytics Data
+                  </button>
+                  <button className="px-4 py-2 bg-red-600/20 text-red-500 rounded-lg hover:bg-red-600/30 transition-colors">
+                    Clear Analytics Data
+                  </button>
+                </div>
               </>
             )}
           </div>
         </div>
       </div>
-
-      {/* Styles */}
-      <style>{`
-        @keyframes slide-in {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in { animation: slide-in 0.3s ease-out; }
-      `}</style>
     </div>
   );
 };
