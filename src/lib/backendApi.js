@@ -440,6 +440,55 @@ export const adminApi = {
   getHealth: async () => {
     const response = await fetch(`${API_BASE.replace('/api', '')}/health`);
     return response.json();
+  },
+
+  // Delete user
+  deleteUser: async (userId) => {
+    return apiRequest(`/admin/users/${userId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Get settings
+  getSettings: async () => {
+    return apiRequest('/admin/settings');
+  },
+
+  // Update settings (secrets are write-only)
+  updateSettings: async (settings) => {
+    return apiRequest('/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(settings)
+    });
+  },
+
+  // Send notification to user
+  sendNotification: async (userId, notification) => {
+    return apiRequest(`/admin/users/${userId}/notify`, {
+      method: 'POST',
+      body: JSON.stringify(notification)
+    });
+  },
+
+  // Bulk actions
+  bulkDeleteContent: async (ids) => {
+    return apiRequest('/admin/content/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids })
+    });
+  },
+
+  bulkUpdateUsers: async (ids, data) => {
+    return apiRequest('/admin/users/bulk-update', {
+      method: 'POST',
+      body: JSON.stringify({ ids, data })
+    });
+  },
+
+  // Get audit logs
+  getAuditLogs: async (params = {}) => {
+    const queryParams = new URLSearchParams(params);
+    return apiRequest(`/admin/audit-logs?${queryParams}`);
   }
 };
 
