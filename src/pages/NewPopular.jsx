@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import MovieRow from '../components/MovieRow';
 import MovieModal from '../components/MovieModal';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const NewPopular = () => {
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -14,14 +13,9 @@ const NewPopular = () => {
   useEffect(() => {
     const fetchTrending = async () => {
       try {
-        const [dayRes, weekRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${API_KEY}`),
-          fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`)
-        ]);
-
         const [dayData, weekData] = await Promise.all([
-          dayRes.json(),
-          weekRes.json()
+          tmdbApi.getTrendingMovies('day', 1),
+          tmdbApi.getTrendingMovies('week', 1)
         ]);
 
         setTrendingDay(dayData.results || []);

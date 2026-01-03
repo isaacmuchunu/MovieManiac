@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { tmdbApi } from '../lib/tmdbProxy';
 
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
 
 const PlayIcon = () => (
@@ -24,10 +24,7 @@ const Hero = ({ onMoreInfo }) => {
   useEffect(() => {
     const fetchFeaturedMovie = async () => {
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=en-US&page=1`
-        );
-        const data = await response.json();
+        const data = await tmdbApi.getNowPlayingMovies(1);
         // Get a random movie from top 5
         const randomIndex = Math.floor(Math.random() * Math.min(5, data.results.length));
         setMovie(data.results[randomIndex]);
@@ -60,7 +57,7 @@ const Hero = ({ onMoreInfo }) => {
   if (!movie) return null;
 
   return (
-    <div className="relative h-[85vh] overflow-hidden">
+    <div className="relative h-[80vh] md:h-[85vh] overflow-hidden">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -73,8 +70,9 @@ const Hero = ({ onMoreInfo }) => {
       <div className="hero-gradient absolute inset-0" />
       <div className="hero-gradient-left absolute inset-0" />
 
-      {/* Content */}
-      <div className="absolute bottom-1/4 left-4 md:left-14 max-w-2xl z-10 animate-fade-in">
+      {/* Content - Using flex for more predictable positioning */}
+      <div className="absolute inset-0 flex items-end">
+        <div className="pb-28 md:pb-32 px-4 md:px-14 max-w-2xl z-10 animate-fade-in">
         {/* Netflix Original Badge */}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-netflix-red font-bold text-xl tracking-widest">N</span>
@@ -117,10 +115,11 @@ const Hero = ({ onMoreInfo }) => {
             More Info
           </button>
         </div>
+        </div>
       </div>
 
       {/* Maturity Rating Badge */}
-      <div className="absolute bottom-1/4 right-0 flex items-center">
+      <div className="absolute bottom-28 md:bottom-32 right-0 flex items-center">
         <div className="bg-gray-800/80 border-l-2 border-gray-400 py-1 px-4">
           <span className="text-sm text-gray-300">16+</span>
         </div>

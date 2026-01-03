@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary, { PageErrorBoundary } from "./components/ErrorBoundary";
 
 // Eagerly loaded pages (critical path)
 import Home from "./pages/Home";
@@ -29,6 +30,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -52,9 +54,10 @@ const PageLoader = () => (
  */
 function App() {
   return (
-    <div className="bg-netflix-black min-h-screen">
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+    <ErrorBoundary>
+      <div className="bg-netflix-black min-h-screen">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           {/* Auth pages without navbar/footer */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -71,6 +74,7 @@ function App() {
                   <Route path="/content" element={<ContentManagement />} />
                   <Route path="/users" element={<UserManagement />} />
                   <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/settings" element={<AdminSettings />} />
                 </Routes>
               </Suspense>
             </AdminLayout>
@@ -113,9 +117,10 @@ function App() {
               <Footer />
             </>
           } />
-        </Routes>
-      </Suspense>
-    </div>
+          </Routes>
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 }
 

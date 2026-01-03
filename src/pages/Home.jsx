@@ -5,8 +5,7 @@ import TopTenRow from '../components/TopTenRow';
 import MovieModal from '../components/MovieModal';
 import AIRecommendations from '../components/AIRecommendations';
 import WatchParty from '../components/WatchParty';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const Home = () => {
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -16,10 +15,7 @@ const Home = () => {
   useEffect(() => {
     const fetchTrending = async () => {
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`
-        );
-        const data = await response.json();
+        const data = await tmdbApi.getTrendingMovies('week', 1);
         setTrendingMovies(data.results?.slice(0, 10) || []);
       } catch (error) {
         console.error('Error fetching trending:', error);
@@ -40,12 +36,12 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-netflix-black">
+    <div className="min-h-screen bg-netflix-black pt-16 md:pt-20">
       {/* Hero Section */}
       <Hero onMoreInfo={handleMovieClick} />
 
-      {/* Movie Rows - positioned to overlap hero */}
-      <div className="relative -mt-32 z-10 space-y-10 md:space-y-12 pb-16">
+      {/* Movie Rows - positioned with controlled spacing from hero */}
+      <div className="relative -mt-24 pt-6 z-10 space-y-14 md:space-y-16 pb-20">
         {/* Trending Now */}
         <MovieRow
           title="Trending Now"

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import MovieCard from './MovieCard';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const ChevronLeftIcon = () => (
   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,8 +13,6 @@ const ChevronRightIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
   </svg>
 );
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 
 const MovieRow = ({ title, type, movies: propMovies, onMovieClick }) => {
   const [movies, setMovies] = useState(propMovies || []);
@@ -31,10 +30,23 @@ const MovieRow = ({ title, type, movies: propMovies, onMovieClick }) => {
 
     const fetchMovies = async () => {
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/movie/${type}?api_key=${API_KEY}&language=en-US&page=1`
-        );
-        const data = await response.json();
+        let data;
+        switch (type) {
+          case 'popular':
+            data = await tmdbApi.getPopularMovies(1);
+            break;
+          case 'top_rated':
+            data = await tmdbApi.getTopRatedMovies(1);
+            break;
+          case 'upcoming':
+            data = await tmdbApi.getUpcomingMovies(1);
+            break;
+          case 'now_playing':
+            data = await tmdbApi.getNowPlayingMovies(1);
+            break;
+          default:
+            data = await tmdbApi.getPopularMovies(1);
+        }
         setMovies(data.results?.slice(0, 20) || []);
       } catch (error) {
         console.error('Error fetching movies:', error);

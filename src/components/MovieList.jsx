@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import MovieCard from "./MovieCard";
 import FilterRating from "./FilterRating";
 import _ from "lodash";
+import { tmdbApi } from '../lib/tmdbProxy';
+
 export const MovieList = ({type, title, emoji}) => {
   const [movies, setMovies] = useState([]);
   const [filteredMovies, setFilteredMovies] = useState([]);
@@ -23,10 +25,23 @@ export const MovieList = ({type, title, emoji}) => {
 
   const fetchMovies = async () => {
     try {
-      const res = await fetch(
-`        https://api.themoviedb.org/3/movie/${type}?api_key=617c0260598c225e728db47b98d5ea6f
-`      );
-      const data = await res.json();
+      let data;
+      switch (type) {
+        case 'popular':
+          data = await tmdbApi.getPopularMovies(1);
+          break;
+        case 'top_rated':
+          data = await tmdbApi.getTopRatedMovies(1);
+          break;
+        case 'upcoming':
+          data = await tmdbApi.getUpcomingMovies(1);
+          break;
+        case 'now_playing':
+          data = await tmdbApi.getNowPlayingMovies(1);
+          break;
+        default:
+          data = await tmdbApi.getPopularMovies(1);
+      }
       setMovies(data.results.slice(0, 15));
       setFilteredMovies(data.results.slice(0, 15));
     } catch (error) {
