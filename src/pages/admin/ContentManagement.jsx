@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../lib/backendApi';
-import { tmdbApi } from '../../lib/videoProviders';
+import { tmdbApi } from '../../lib/tmdbProxy';
 
 const ContentManagement = () => {
   const navigate = useNavigate();

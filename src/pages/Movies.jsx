@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import MovieRow from '../components/MovieRow';
 import MovieModal from '../components/MovieModal';
-
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
+import { tmdbApi } from '../lib/tmdbProxy';
 
 const Movies = () => {
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -13,10 +12,7 @@ const Movies = () => {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/genre/movie/list?api_key=${API_KEY}&language=en-US`
-        );
-        const data = await response.json();
+        const data = await tmdbApi.getMovieGenres();
         setGenres(data.genres?.slice(0, 8) || []);
       } catch (error) {
         console.error('Error fetching genres:', error);
@@ -34,10 +30,7 @@ const Movies = () => {
         const moviesByGenre = {};
         await Promise.all(
           genres.map(async (genre) => {
-            const response = await fetch(
-              `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${genre.id}&language=en-US&page=1`
-            );
-            const data = await response.json();
+            const data = await tmdbApi.getMoviesByGenre(genre.id, 1);
             moviesByGenre[genre.id] = data.results?.slice(0, 20) || [];
           })
         );

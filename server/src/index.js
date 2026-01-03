@@ -29,6 +29,7 @@ import subscriptionRoutes from './routes/subscription.js';
 import adminRoutes from './routes/admin.js';
 import searchRoutes from './routes/search.js';
 import notificationRoutes from './routes/notifications.js';
+import tmdbRoutes from './routes/tmdb.js';
 
 dotenv.config();
 
@@ -150,6 +151,7 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/tmdb', tmdbRoutes);
 
 // Socket handlers
 setupSocketHandlers(io);

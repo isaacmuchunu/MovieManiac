@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MovieRow from './MovieRow';
+import { tmdbApi } from '../lib/tmdbProxy';
 
-const API_KEY = '617c0260598c225e728db47b98d5ea6f';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
 
 const CloseIcon = () => (
@@ -59,21 +59,15 @@ const MovieModal = ({ movie, onClose }) => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const [detailsRes, creditsRes, similarRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=en-US`),
-          fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${API_KEY}&language=en-US`),
-          fetch(`https://api.themoviedb.org/3/movie/${movie.id}/similar?api_key=${API_KEY}&language=en-US&page=1`)
-        ]);
-
         const [detailsData, creditsData, similarData] = await Promise.all([
-          detailsRes.json(),
-          creditsRes.json(),
-          similarRes.json()
+          tmdbApi.getMovieDetails(movie.id),
+          tmdbApi.getMovieCredits(movie.id),
+          tmdbApi.discoverMovies({ similar: movie.id, page: 1 })
         ]);
 
         setDetails(detailsData);
         setCredits(creditsData);
-        setSimilar(similarData.results?.slice(0, 12) || []);
+        setSimilar(similarData.results?.slice(0, 12) || detailsData.similar?.results?.slice(0, 12) || []);
       } catch (error) {
         console.error('Error fetching movie details:', error);
       } finally {
