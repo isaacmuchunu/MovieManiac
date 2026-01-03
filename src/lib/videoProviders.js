@@ -439,6 +439,38 @@ export const tmdbApi = {
     return res.json();
   },
 
+  // Get similar movies
+  getSimilarMovies: async (movieId, page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/similar?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+    return res.json();
+  },
+
+  // Get similar TV shows
+  getSimilarTvShows: async (tvId, page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/similar?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+    return res.json();
+  },
+
+  // Get movie recommendations
+  getMovieRecommendations: async (movieId, page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+    return res.json();
+  },
+
+  // Get TV recommendations
+  getTvRecommendations: async (tvId, page = 1) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/recommendations?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+    return res.json();
+  },
+
   // Get countries list
   getCountries: async () => {
     const res = await fetch(
