@@ -29,6 +29,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
+const Settings = lazy(() => import("./pages/admin/Settings"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -71,6 +72,7 @@ function App() {
                   <Route path="/content" element={<ContentManagement />} />
                   <Route path="/users" element={<UserManagement />} />
                   <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Routes>
               </Suspense>
             </AdminLayout>
