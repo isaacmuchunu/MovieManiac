@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { tmdbApi } from '../lib/videoProviders';
+import { errorReporting, ErrorCategory } from '../lib/errorReporting';
 
 const NotificationCenter = ({ onClose }) => {
   const dropdownRef = useRef(null);
@@ -45,8 +46,8 @@ const NotificationCenter = ({ onClose }) => {
                 return;
               }
             }
-          } catch (err) {
-            console.log('Backend notifications not available, using TMDB');
+          } catch {
+            // Backend notifications not available, fall back to TMDB-based notifications
           }
         }
 
@@ -112,7 +113,9 @@ const NotificationCenter = ({ onClose }) => {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        errorReporting.captureError(err, { category: ErrorCategory.NETWORK });
+      });
     }
   };
 
@@ -125,7 +128,9 @@ const NotificationCenter = ({ onClose }) => {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        errorReporting.captureError(err, { category: ErrorCategory.NETWORK });
+      });
     }
   };
 
@@ -138,7 +143,9 @@ const NotificationCenter = ({ onClose }) => {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        errorReporting.captureError(err, { category: ErrorCategory.NETWORK });
+      });
     }
   };
 
@@ -151,7 +158,9 @@ const NotificationCenter = ({ onClose }) => {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        errorReporting.captureError(err, { category: ErrorCategory.NETWORK });
+      });
     }
   };
 

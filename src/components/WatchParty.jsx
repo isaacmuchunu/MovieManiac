@@ -289,7 +289,7 @@ function WatchParty() {
                 setPartyCode(e.target.value.toUpperCase().slice(0, 6));
                 setError('');
               }}
-              placeholder="XXXXXX"
+              placeholder="ABC123"
               className="w-full bg-gray-800 text-white text-center text-3xl tracking-[0.5em] font-mono rounded-lg px-4 py-4 outline-none focus:ring-2 focus:ring-netflix-red placeholder-gray-600"
               maxLength={6}
             />

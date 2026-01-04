@@ -1,4 +1,4 @@
-# MovieMania - Enterprise Streaming Platform
+# Moovie - Enterprise Streaming Platform
 
 A Netflix-style streaming platform built with React, Node.js, and HLS video streaming.
 
@@ -75,8 +75,8 @@ A Netflix-style streaming platform built with React, Node.js, and HLS video stre
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/moviemania.git
-cd moviemania
+git clone https://github.com/isaacmuchunu/Moovie.git
+cd Moovie
 ```
 
 2. Install frontend dependencies:

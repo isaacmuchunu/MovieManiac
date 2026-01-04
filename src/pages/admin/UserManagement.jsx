@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../../lib/backendApi';
+import { errorReporting, ErrorCategory } from '../../lib/errorReporting';
 
 // Toast component
 const Toast = ({ message, type, onClose }) => {
@@ -62,20 +63,23 @@ const UserManagement = () => {
         role: filter.role !== 'all' ? filter.role : undefined,
         subscription: filter.subscription !== 'all' ? filter.subscription : undefined,
         search: searchQuery || undefined
-      }).catch(() => ({
-        // Demo data when API unavailable
-        users: [
-          { id: 1, name: 'John Doe', email: 'john@example.com', role: 'USER', subscription: 'PREMIUM', joinDate: '2024-01-15', lastActive: '2024-12-30', status: 'ACTIVE' },
-          { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'USER', subscription: 'STANDARD', joinDate: '2024-02-20', lastActive: '2024-12-29', status: 'ACTIVE' },
-          { id: 3, name: 'Bob Wilson', email: 'bob@example.com', role: 'ADMIN', subscription: 'PREMIUM', joinDate: '2023-06-10', lastActive: '2024-12-30', status: 'ACTIVE' },
-          { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'USER', subscription: 'BASIC', joinDate: '2024-05-08', lastActive: '2024-12-28', status: 'ACTIVE' },
-          { id: 5, name: 'Charlie Davis', email: 'charlie@example.com', role: 'USER', subscription: 'FREE', joinDate: '2024-08-22', lastActive: '2024-12-25', status: 'INACTIVE' },
-          { id: 6, name: 'Eva Martinez', email: 'eva@example.com', role: 'MODERATOR', subscription: 'PREMIUM', joinDate: '2024-03-15', lastActive: '2024-12-30', status: 'ACTIVE' },
-          { id: 7, name: 'Frank Lee', email: 'frank@example.com', role: 'USER', subscription: 'STANDARD', joinDate: '2024-07-01', lastActive: '2024-12-27', status: 'SUSPENDED' },
-          { id: 8, name: 'Grace Kim', email: 'grace@example.com', role: 'USER', subscription: 'PREMIUM', joinDate: '2024-04-18', lastActive: '2024-12-30', status: 'ACTIVE' },
-        ],
-        totalPages: 5
-      }));
+      }).catch((error) => {
+        // Log error and return demo data
+        errorReporting.captureError(error, { category: ErrorCategory.NETWORK });
+        return {
+          users: [
+            { id: 1, name: 'John Doe', email: 'john@example.com', role: 'USER', subscription: 'PREMIUM', joinDate: '2024-01-15', lastActive: '2024-12-30', status: 'ACTIVE' },
+            { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'USER', subscription: 'STANDARD', joinDate: '2024-02-20', lastActive: '2024-12-29', status: 'ACTIVE' },
+            { id: 3, name: 'Bob Wilson', email: 'bob@example.com', role: 'ADMIN', subscription: 'PREMIUM', joinDate: '2023-06-10', lastActive: '2024-12-30', status: 'ACTIVE' },
+            { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'USER', subscription: 'BASIC', joinDate: '2024-05-08', lastActive: '2024-12-28', status: 'ACTIVE' },
+            { id: 5, name: 'Charlie Davis', email: 'charlie@example.com', role: 'USER', subscription: 'FREE', joinDate: '2024-08-22', lastActive: '2024-12-25', status: 'INACTIVE' },
+            { id: 6, name: 'Eva Martinez', email: 'eva@example.com', role: 'MODERATOR', subscription: 'PREMIUM', joinDate: '2024-03-15', lastActive: '2024-12-30', status: 'ACTIVE' },
+            { id: 7, name: 'Frank Lee', email: 'frank@example.com', role: 'USER', subscription: 'STANDARD', joinDate: '2024-07-01', lastActive: '2024-12-27', status: 'SUSPENDED' },
+            { id: 8, name: 'Grace Kim', email: 'grace@example.com', role: 'USER', subscription: 'PREMIUM', joinDate: '2024-04-18', lastActive: '2024-12-30', status: 'ACTIVE' },
+          ],
+          totalPages: 5
+        };
+      });
 
       setUsers(data.users || []);
       setTotalPages(data.totalPages || 1);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/backendApi';
+import { errorReporting, ErrorCategory } from '../../lib/errorReporting';
 
 const MetricCard = ({ title, value, subtitle, icon, trend }) => (
   <div className="bg-netflix-dark-gray rounded-xl p-6 border border-gray-800">
@@ -48,10 +49,12 @@ const Analytics = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getAnalytics(period).catch(() => null);
+      const data = await adminApi.getAnalytics(period);
       setAnalytics(data);
     } catch (error) {
-      console.error('Failed to fetch analytics:', error);
+      // Analytics fetch failed - use demo data (expected in demo mode)
+      errorReporting.captureError(error, { category: ErrorCategory.NETWORK });
+      setAnalytics(null);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import 'dotenv/config';
 
 const prisma = new PrismaClient();
+
+// Admin credentials from environment variables (required for seeding)
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@moovie.local';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin User';
 
 // All genres as specified
 const genres = [
@@ -112,30 +118,39 @@ async function main() {
   }
   console.log(`✅ Seeded ${countries.length} countries`);
 
-  // Create default admin user
+  // Create default admin user (requires ADMIN_PASSWORD environment variable)
   console.log('👤 Creating admin user...');
-  const hashedPassword = await bcrypt.hash('admin123', 12);
 
-  await prisma.user.upsert({
-    where: { email: 'admin@moovie.com' },
-    update: {},
-    create: {
-      email: 'admin@moovie.com',
-      password: hashedPassword,
-      name: 'Admin User',
-      role: 'ADMIN',
-      emailVerified: true,
-      subscription: {
-        create: {
-          plan: 'PREMIUM',
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+  if (!ADMIN_PASSWORD) {
+    console.log('⚠️  Skipping admin user creation: ADMIN_PASSWORD environment variable not set');
+    console.log('   To create an admin user, set these environment variables:');
+    console.log('   - ADMIN_EMAIL (optional, defaults to admin@moovie.local)');
+    console.log('   - ADMIN_PASSWORD (required)');
+    console.log('   - ADMIN_NAME (optional, defaults to Admin User)');
+  } else {
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
+
+    await prisma.user.upsert({
+      where: { email: ADMIN_EMAIL },
+      update: {},
+      create: {
+        email: ADMIN_EMAIL,
+        password: hashedPassword,
+        name: ADMIN_NAME,
+        role: 'ADMIN',
+        emailVerified: true,
+        subscription: {
+          create: {
+            plan: 'PREMIUM',
+            status: 'ACTIVE',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          },
         },
       },
-    },
-  });
-  console.log('✅ Admin user created (admin@moovie.com / admin123)');
+    });
+    console.log(`✅ Admin user created (${ADMIN_EMAIL})`);
+  }
 
   console.log('🎉 Database seed completed!');
 }

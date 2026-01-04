@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from './api';
+import { errorReporting, ErrorCategory } from './errorReporting';
 
 // Auth Store
 export const useAuthStore = create(
@@ -28,7 +29,10 @@ export const useAuthStore = create(
       },
 
       logout: () => {
-        api.auth.logout().catch(() => {});
+        api.auth.logout().catch((err) => {
+          // Log logout failures but don't block the UI logout
+          errorReporting.captureError(err, { category: ErrorCategory.AUTH });
+        });
         set({ user: null, accessToken: null, isAuthenticated: false });
       },
 

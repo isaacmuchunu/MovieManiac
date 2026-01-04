@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { Link } from 'react-router-dom';
+import { errorReporting, ErrorCategory, ErrorSeverity } from '../lib/errorReporting';
 
 /**
  * ErrorBoundary - React Error Boundary Component
@@ -23,18 +24,24 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     // Log error to console in development
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (import.meta.env.DEV) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
 
     this.setState({
       error,
       errorInfo
     });
 
-    // In production, you would send this to an error reporting service like Sentry
-    if (import.meta.env.PROD) {
-      // Example: Send to error tracking service
-      // errorTrackingService.captureException(error, { extra: errorInfo });
-    }
+    // Report error to error tracking service
+    errorReporting.captureError(error, {
+      category: ErrorCategory.UI,
+      severity: ErrorSeverity.ERROR,
+      extra: {
+        componentStack: errorInfo?.componentStack,
+        componentName: this.props.componentName
+      }
+    });
   }
 
   handleRetry = () => {
