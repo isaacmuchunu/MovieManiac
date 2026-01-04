@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../lib/backendApi';
+import { errorReporting, ErrorCategory } from '../../lib/errorReporting';
 
 const ToggleSwitch = ({ enabled, onChange, disabled }) => (
   <button
@@ -111,12 +112,13 @@ const Settings = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getSettings().catch(() => null);
+      const data = await adminApi.getSettings();
       if (data) {
         setSettings(prev => ({ ...prev, ...data }));
       }
     } catch (error) {
-      console.error('Failed to fetch settings:', error);
+      // Settings fetch failed - use defaults (this is expected in demo mode)
+      errorReporting.captureError(error, { category: ErrorCategory.NETWORK });
     } finally {
       setLoading(false);
     }
@@ -125,13 +127,14 @@ const Settings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await adminApi.updateSettings(settings).catch(() => {
-        // Demo mode - just show success
-      });
+      await adminApi.updateSettings(settings);
       setShowSaveSuccess(true);
       setTimeout(() => setShowSaveSuccess(false), 3000);
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      // In demo mode, still show success for UX
+      errorReporting.captureError(error, { category: ErrorCategory.NETWORK });
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
     } finally {
       setSaving(false);
     }

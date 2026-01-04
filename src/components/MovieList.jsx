@@ -64,7 +64,6 @@ export const MovieList = ({type, title, emoji}) => {
     setSort((prev) => {
       return { ...prev, [name]: value };
     });
-    console.log(sort);
   };
   return (
     <div id={type}>

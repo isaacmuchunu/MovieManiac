@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { userApi } from '../lib/backendApi';
 import { tmdbApi } from '../lib/videoProviders';
+import { errorReporting, ErrorCategory } from '../lib/errorReporting';
 import Loading from '../components/Loading';
 
 /**
@@ -25,7 +26,10 @@ function WatchHistory() {
     const fetchWatchHistory = async () => {
       try {
         // Try to fetch from backend API
-        const data = await userApi.getWatchHistory().catch(() => null);
+        const data = await userApi.getWatchHistory().catch((error) => {
+          errorReporting.captureError(error, { category: ErrorCategory.NETWORK });
+          return null;
+        });
 
         if (data && data.history) {
           // Map backend data to component format
