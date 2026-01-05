@@ -2,6 +2,10 @@
 // Aggregates 20+ embed sources for movies and TV shows
 // TMDB API calls are now routed through the backend proxy for security
 
+// Import tmdbApi from the secure proxy for backward compatibility
+// All TMDB API calls now go through the backend proxy
+import { tmdbApi } from './tmdbProxy.js';
+
 // Server configurations with embed URL generators
 // Updated with more reliable and working video sources
 export const videoServers = [
@@ -159,9 +163,8 @@ export const getFastServers = () => {
   return videoServers.filter(s => s.speed === 'fast');
 };
 
-// Re-export tmdbApi from the secure proxy for backward compatibility
-// All TMDB API calls now go through the backend proxy
-export { tmdbApi } from './tmdbProxy.js';
+// Re-export tmdbApi for consumers of this module
+export { tmdbApi };
 
 // Helper to check if a server is available
 export const checkServerAvailability = async (serverId, tmdbId) => {

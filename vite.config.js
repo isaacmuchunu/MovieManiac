@@ -4,6 +4,8 @@ import svgr from 'vite-plugin-svgr'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Load .env from server folder for single source of truth
+  envDir: './server',
   plugins: [react(), svgr()],
 
   // Build optimizations

@@ -1,0 +1,155 @@
+# Sentry Integration Workflow
+# This workflow handles Sentry setup and release tracking
+
+name: Sentry Integration
+
+on:
+  # Manual trigger with Sentry setup option
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'create-release'
+        type: choice
+        options:
+          - create-release
+          - upload-sourcemaps
+          - setup-project
+
+  # Automatically create releases on main branch pushes
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+
+env:
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+jobs:
+  # Setup Sentry project (manual trigger only)
+  setup:
+    name: Setup Sentry Project
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'setup-project'
+    steps:
+      - name: Check Sentry Configuration
+        run: |
+          echo "🔧 Sentry Setup Instructions"
+          echo "================================"
+          echo ""
+          echo "To complete Sentry setup, you need to:"
+          echo ""
+          echo "1. Create a Sentry account at https://sentry.io"
+          echo ""
+          echo "2. Create a new project:"
+          echo "   - Go to Settings > Projects > Create Project"
+          echo "   - Select 'React' as the platform"
+          echo "   - Name your project (e.g., 'moovie')"
+          echo ""
+          echo "3. Get your DSN:"
+          echo "   - Go to Settings > Projects > [Your Project] > Client Keys (DSN)"
+          echo "   - Copy the DSN URL"
+          echo ""
+          echo "4. Add secrets to this repository:"
+          echo "   - SENTRY_ORG: Your Sentry organization slug"
+          echo "   - SENTRY_PROJECT: Your project name"
+          echo "   - SENTRY_AUTH_TOKEN: Create at Settings > Auth Tokens"
+          echo "   - SENTRY_DSN: Your project DSN (for frontend)"
+          echo ""
+          echo "5. Update your server/.env file:"
+          echo "   VITE_ERROR_REPORTING_ENABLED=true"
+          echo "   VITE_SENTRY_DSN=<your-dsn-here>"
+          echo ""
+          echo "✅ Once configured, Sentry will automatically track errors!"
+
+  # Create a Sentry release
+  release:
+    name: Create Sentry Release
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'create-release')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with sourcemaps
+        run: |
+          # Enable sourcemaps for Sentry
+          VITE_SENTRY_DSN=${{ secrets.SENTRY_DSN }} npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Create Sentry Release
+        if: env.SENTRY_AUTH_TOKEN != ''
+        uses: getsentry/action-release@v1
+        with:
+          environment: production
+          sourcemaps: ./dist/assets
+          version: ${{ github.sha }}
+
+      - name: Skip Sentry (not configured)
+        if: env.SENTRY_AUTH_TOKEN == ''
+        run: |
+          echo "⚠️ Sentry is not configured. Skipping release creation."
+          echo "To enable Sentry releases, add the following secrets:"
+          echo "  - SENTRY_ORG"
+          echo "  - SENTRY_PROJECT"
+          echo "  - SENTRY_AUTH_TOKEN"
+          echo ""
+          echo "Run this workflow manually with 'setup-project' for instructions."
+
+  # Upload sourcemaps only (for debugging existing releases)
+  sourcemaps:
+    name: Upload Source Maps
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'upload-sourcemaps'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build with sourcemaps
+        run: |
+          # Temporarily enable sourcemaps
+          sed -i 's/sourcemap: false/sourcemap: true/' vite.config.js
+          npm run build
+
+      - name: Upload sourcemaps to Sentry
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          sentry-cli releases new ${{ github.sha }}
+          sentry-cli releases files ${{ github.sha }} upload-sourcemaps ./dist/assets
+          sentry-cli releases finalize ${{ github.sha }}
+
+      - name: Skip (not configured)
+        if: env.SENTRY_AUTH_TOKEN == ''
+        run: |
+          echo "⚠️ SENTRY_AUTH_TOKEN not configured. Cannot upload sourcemaps."
