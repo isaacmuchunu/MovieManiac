@@ -27,6 +27,7 @@ const VideoPlayer = ({
   const [autoSwitchAttempts, setAutoSwitchAttempts] = useState(0);
   const [loadStartTime, setLoadStartTime] = useState(Date.now());
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [showKeyboardHint, setShowKeyboardHint] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(season);
 
   const containerRef = useRef(null);
@@ -80,9 +81,16 @@ const VideoPlayer = ({
   // Toggle fullscreen
   const toggleFullscreen = async () => {
     try {
+      // Focus the iframe first for better video control
+      if (iframeRef.current) {
+        iframeRef.current.focus();
+      }
+      
       if (!document.fullscreenElement) {
-        await containerRef.current?.requestFullscreen();
-        setIsFullscreen(true);
+        if (containerRef.current) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
       } else {
         await document.exitFullscreen();
         setIsFullscreen(false);
@@ -103,10 +111,67 @@ const VideoPlayer = ({
     }, 3000);
   };
 
+  // Auto-hide keyboard hint after 5 seconds
+  useEffect(() => {
+    if (showKeyboardHint) {
+      const timer = setTimeout(() => setShowKeyboardHint(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showKeyboardHint]);
+
+  // Keyboard shortcuts helper effect
+  useEffect(() => {
+    // Show keyboard hint on first interaction
+    const handleFirstInteraction = () => {
+      setShowKeyboardHint(true);
+      setTimeout(() => setShowKeyboardHint(false), 3000);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+    };
+
+    document.addEventListener('keydown', handleFirstInteraction);
+    document.addEventListener('click', handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Prevent default for video controls
+      if (e.key === ' ' || e.key === 'f' || e.key === 'F' || e.key === 'Escape') {
+        e.preventDefault();
+      }
+
       switch (e.key) {
+        case ' ':
+        case 'Spacebar':
+          // Show/hide controls and focus iframe for direct interaction
+          setShowControls(prev => !prev);
+          if (iframeRef.current) {
+            // Focus the iframe so spacebar works directly in the video
+            iframeRef.current.focus();
+            
+            // Also try to simulate media key press if possible
+            try {
+              // Send a space key event to the iframe
+              const event = new KeyboardEvent('keydown', {
+                key: ' ',
+                code: 'Space',
+                keyCode: 32,
+                which: 32,
+                bubbles: true,
+                cancelable: true
+              });
+              iframeRef.current.contentWindow.dispatchEvent(event);
+            } catch (err) {
+              // Fallback: just show controls so user can click video
+            }
+          }
+          break;
         case 'Escape':
           if (showServerList) {
             setShowServerList(false);
@@ -431,6 +496,37 @@ const VideoPlayer = ({
         </div>
       )}
 
+      {/* Keyboard Hint Overlay */}
+      {showKeyboardHint && (
+        <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm rounded-lg p-3 z-20 pointer-events-none">
+          <p className="text-white text-sm font-medium mb-2">Keyboard Shortcuts:</p>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">F</kbd>
+              <span className="text-gray-300">Fullscreen</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">ESC</kbd>
+              <span className="text-gray-300">Exit/Close</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">Space</kbd>
+              <span className="text-gray-300">Play/Pause</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">S</kbd>
+              <span className="text-gray-300">Change Server</span>
+            </div>
+            {type === 'tv' && (
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">E</kbd>
+                <span className="text-gray-300">Episode List</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Video Player */}
       <div className="flex-1 relative">
         {/* Loading State */}
@@ -497,11 +593,13 @@ const VideoPlayer = ({
         <iframe
           ref={iframeRef}
           src={getStreamUrl()}
-          className="w-full h-full"
+          className="w-full h-full focus:outline-none"
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          tabIndex="0"
           onLoad={handleIframeLoad}
           style={{ border: 'none' }}
+          title="Video Player"
         />
       </div>
 
