@@ -1,0 +1,537 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  avatarUrl     String?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profiles                Profile[]
+  subscription            Subscription?
+  watchHistory            WatchHistory[]
+  watchlist               Watchlist[]
+  ratings                 Rating[]
+  reviews                 Review[]
+  refreshTokens           RefreshToken[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreferences?
+
+  @@index([email])
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  name        String
+  avatarUrl   String?
+  isKids      Boolean  @default(false)
+  pin         String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  watchHistory WatchHistory[]
+  watchlist    Watchlist[]
+  preferences  ProfilePreferences?
+
+  @@index([userId])
+}
+
+model ProfilePreferences {
+  id                String   @id @default(uuid())
+  profileId         String   @unique
+  profile           Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  autoplayNext      Boolean  @default(true)
+  autoplayPreviews  Boolean  @default(true)
+  defaultQuality    Quality  @default(AUTO)
+  subtitleLanguage  String   @default("en")
+  audioLanguage     String   @default("en")
+  maturityLevel     Int      @default(18)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// Subscription & Billing
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 SubscriptionPlan   @default(BASIC)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([stripeCustomerId])
+}
+
+// Content Management
+model Content {
+  id              String      @id @default(uuid())
+  tmdbId          Int?        @unique
+  imdbId          String?     @unique
+  title           String
+  originalTitle   String?
+  description     String      @db.Text
+  tagline         String?
+  type            ContentType
+  releaseDate     DateTime?
+  endDate         DateTime?   // For series
+  runtime         Int?        // in minutes (for movies) or average episode runtime (for series)
+
+  // Ratings
+  imdbRating      Float?      // IMDB rating (0-10)
+  imdbVotes       Int?        // Number of IMDB votes
+  tmdbRating      Float?      // TMDB rating
+  rottenTomatoes  Int?        // Rotten Tomatoes score (0-100)
+  metacritic      Int?        // Metacritic score (0-100)
+
+  // Classification
+  maturityRating  String      @default("PG-13")
+  certification   String?     // e.g., "TV-MA", "R", "PG-13"
+
+  // Media
+  posterUrl       String?
+  backdropUrl     String?
+  trailerUrl      String?
+  logoUrl         String?
+
+  // Status
+  status          ContentStatus @default(RELEASED)
+  featured        Boolean     @default(false)
+  trending        Boolean     @default(false)
+  isPublished     Boolean     @default(false)
+
+  // Series specific
+  totalSeasons    Int?
+  totalEpisodes   Int?
+  isOngoing       Boolean     @default(false)
+
+  // Metadata
+  language        String      @default("en")
+  budget          BigInt?
+  revenue         BigInt?
+  popularity      Float?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  genres          ContentGenre[]
+  countries       ContentCountry[]
+  cast            ContentCast[]
+  videos          Video[]
+  seasons         Season[]
+  watchHistory    WatchHistory[]
+  watchlist       Watchlist[]
+  ratings         Rating[]
+  reviews         Review[]
+  keywords        ContentKeyword[]
+  notifications   Notification[]
+
+  @@index([type])
+  @@index([featured])
+  @@index([trending])
+  @@index([isPublished])
+  @@index([imdbRating])
+  @@index([releaseDate])
+}
+
+model Genre {
+  id       String         @id @default(uuid())
+  tmdbId   Int?           @unique
+  name     String         @unique
+  slug     String         @unique
+  icon     String?        // Emoji or icon name
+  contents ContentGenre[]
+
+  @@index([slug])
+}
+
+model ContentGenre {
+  contentId String
+  genreId   String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  genre     Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, genreId])
+}
+
+model Country {
+  id       String           @id @default(uuid())
+  code     String           @unique // ISO 3166-1 alpha-2
+  name     String           @unique
+  flag     String?          // Emoji flag
+  contents ContentCountry[]
+
+  @@index([code])
+}
+
+model ContentCountry {
+  contentId String
+  countryId String
+  isOrigin  Boolean  @default(false) // Is this the country of origin?
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, countryId])
+}
+
+model Keyword {
+  id       String           @id @default(uuid())
+  name     String           @unique
+  contents ContentKeyword[]
+}
+
+model ContentKeyword {
+  contentId String
+  keywordId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  keyword   Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, keywordId])
+}
+
+model Person {
+  id          String        @id @default(uuid())
+  tmdbId      Int?          @unique
+  imdbId      String?       @unique
+  name        String
+  profileUrl  String?
+  biography   String?       @db.Text
+  birthday    DateTime?
+  deathday    DateTime?
+  placeOfBirth String?
+  gender      Int?          // 0: Not specified, 1: Female, 2: Male, 3: Non-binary
+  popularity  Float?
+  contents    ContentCast[]
+
+  @@index([name])
+}
+
+model ContentCast {
+  contentId String
+  personId  String
+  character String?
+  role      CastRole   @default(ACTOR)
+  order     Int        @default(0)
+  content   Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  person    Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, personId, role])
+  @@index([order])
+}
+
+// Video Files & Streaming
+model Video {
+  id           String   @id @default(uuid())
+  contentId    String
+  content      Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  seasonId     String?
+  season       Season?  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeId    String?
+  episode      Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  title        String?
+  description  String?
+  duration     Int      // in seconds
+
+  originalFile String
+  hlsPath      String?
+  status       VideoStatus @default(PENDING)
+
+  qualities    VideoQuality[]
+  subtitles    Subtitle[]
+  audioTracks  AudioTrack[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  watchHistory WatchHistory[]
+
+  @@index([contentId])
+  @@index([status])
+}
+
+model VideoQuality {
+  id         String  @id @default(uuid())
+  videoId    String
+  video      Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  quality    Quality
+  width      Int
+  height     Int
+  bitrate    Int
+  filePath   String
+  fileSize   BigInt
+
+  @@unique([videoId, quality])
+}
+
+model Subtitle {
+  id        String  @id @default(uuid())
+  videoId   String
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  language  String
+  label     String
+  filePath  String
+  isDefault Boolean @default(false)
+  isForced  Boolean @default(false)
+  isCC      Boolean @default(false) // Closed Captions
+
+  @@unique([videoId, language])
+}
+
+model AudioTrack {
+  id        String  @id @default(uuid())
+  videoId   String
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  language  String
+  label     String
+  codec     String?
+  channels  Int?    // 2 for stereo, 6 for 5.1, 8 for 7.1
+  isDefault Boolean @default(false)
+  isAD      Boolean @default(false) // Audio Description
+
+  @@unique([videoId, language])
+}
+
+// TV Series Structure
+model Season {
+  id           String   @id @default(uuid())
+  contentId    String
+  content      Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  title        String?
+  description  String?  @db.Text
+  posterUrl    String?
+  releaseDate  DateTime?
+  episodeCount Int?
+  episodes     Episode[]
+  videos       Video[]
+
+  @@unique([contentId, seasonNumber])
+  @@index([contentId])
+}
+
+model Episode {
+  id            String    @id @default(uuid())
+  seasonId      String
+  season        Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeNumber Int
+  title         String
+  description   String?   @db.Text
+  runtime       Int?
+  stillUrl      String?
+  releaseDate   DateTime?
+  imdbRating    Float?
+  videos        Video[]
+
+  @@unique([seasonId, episodeNumber])
+  @@index([seasonId])
+}
+
+// User Activity
+model WatchHistory {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId    String?
+  profile      Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  contentId    String
+  content      Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  videoId      String?
+  video        Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  progress     Int      @default(0)
+  duration     Int
+  completed    Boolean  @default(false)
+  watchedAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, contentId, videoId])
+  @@index([userId, profileId])
+  @@index([watchedAt])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId String?
+  profile   Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId, profileId])
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-10 scale
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, contentId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  title     String?
+  body      String   @db.Text
+  spoiler   Boolean  @default(false)
+  helpful   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, contentId])
+  @@index([contentId])
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  image     String?
+  link      String?
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreferences {
+  id                 String  @id @default(uuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newReleases        Boolean @default(true)
+  recommendations    Boolean @default(true)
+  watchReminders     Boolean @default(true)
+  accountAlerts      Boolean @default(true)
+  marketing          Boolean @default(false)
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  EXPIRED
+  TRIAL
+}
+
+enum ContentType {
+  MOVIE
+  SERIES
+  DOCUMENTARY
+  SPECIAL
+  ANIME
+}
+
+enum ContentStatus {
+  RUMORED
+  PLANNED
+  IN_PRODUCTION
+  POST_PRODUCTION
+  RELEASED
+  CANCELED
+  ENDED
+}
+
+enum CastRole {
+  ACTOR
+  DIRECTOR
+  WRITER
+  PRODUCER
+  CREATOR
+  COMPOSER
+  CINEMATOGRAPHER
+  EDITOR
+}
+
+enum VideoStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum Quality {
+  AUTO
+  SD_360
+  SD_480
+  HD_720
+  FHD_1080
+  UHD_4K
+}
+
+enum NotificationType {
+  NEW_RELEASE
+  RECOMMENDATION
+  CONTINUE_WATCHING
+  DOWNLOAD_COMPLETE
+  SOCIAL
+  ACCOUNT
+  SUBSCRIPTION
+  SYSTEM
+}
