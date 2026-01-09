@@ -33,6 +33,18 @@ const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const SubscriptionsManagement = lazy(() => import("./pages/admin/Subscriptions"));
 
+// Legal pages (lazy loaded)
+const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const Help = lazy(() => import("./pages/legal/Help"));
+const AudioDescription = lazy(() => import("./pages/legal/AudioDescription"));
+const GiftCards = lazy(() => import("./pages/legal/GiftCards"));
+const MediaCenter = lazy(() => import("./pages/legal/MediaCenter"));
+const InvestorRelations = lazy(() => import("./pages/legal/InvestorRelations"));
+const Careers = lazy(() => import("./pages/legal/Careers"));
+const CookiePolicy = lazy(() => import("./pages/legal/CookiePolicy"));
+const Corporate = lazy(() => import("./pages/legal/Corporate"));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen bg-netflix-black flex items-center justify-center">
@@ -114,6 +126,18 @@ function App() {
                   <Route path="/movie/:movieId" element={<MovieDetail />} />
                   <Route path="/kids" element={<Kids />} />
                   <Route path="/browse-by-language" element={<Browse />} />
+
+                  {/* Legal pages */}
+                  <Route path="/legal/terms" element={<TermsOfService />} />
+                  <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/legal/help" element={<Help />} />
+                  <Route path="/legal/audio-description" element={<AudioDescription />} />
+                  <Route path="/legal/gift-cards" element={<GiftCards />} />
+                  <Route path="/legal/media" element={<MediaCenter />} />
+                  <Route path="/legal/investors" element={<InvestorRelations />} />
+                  <Route path="/legal/careers" element={<Careers />} />
+                  <Route path="/legal/cookies" element={<CookiePolicy />} />
+                  <Route path="/legal/corporate" element={<Corporate />} />
                 </Routes>
               </Suspense>
               <Footer />

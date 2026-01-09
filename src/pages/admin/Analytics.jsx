@@ -60,63 +60,35 @@ const Analytics = () => {
     }
   };
 
-  // Demo data when API unavailable
-  const displayData = analytics || {
-    overview: {
-      totalViews: 1247893,
-      uniqueViewers: 89432,
-      avgWatchTime: '47 min',
-      completionRate: 68,
-      viewsTrend: 12.5,
-      viewersTrend: 8.3,
-      watchTimeTrend: 5.2,
-      completionTrend: 3.1
-    },
-    contentPerformance: [
-      { title: 'Stranger Things', views: 125678, watchTime: 4532 },
-      { title: 'The Witcher', views: 98432, watchTime: 3876 },
-      { title: 'Wednesday', views: 87654, watchTime: 3245 },
-      { title: 'The Last of Us', views: 76543, watchTime: 2987 },
-      { title: 'House of Dragon', views: 65432, watchTime: 2654 },
-      { title: 'Breaking Bad', views: 54321, watchTime: 2345 },
-    ],
-    genreDistribution: [
-      { genre: 'Action', percentage: 28 },
-      { genre: 'Drama', percentage: 24 },
-      { genre: 'Comedy', percentage: 18 },
-      { genre: 'Sci-Fi', percentage: 15 },
-      { genre: 'Horror', percentage: 10 },
-      { genre: 'Other', percentage: 5 },
-    ],
-    deviceStats: [
-      { device: 'Smart TV', percentage: 42 },
-      { device: 'Mobile', percentage: 28 },
-      { device: 'Desktop', percentage: 18 },
-      { device: 'Tablet', percentage: 12 },
-    ],
-    hourlyViews: [
-      23, 18, 12, 8, 5, 4, 6, 12, 25, 35, 42, 48,
-      52, 55, 58, 62, 68, 75, 82, 88, 78, 65, 48, 32
-    ],
-    subscriptionMetrics: {
-      newSubscriptions: 1247,
-      cancellations: 234,
-      upgrades: 567,
-      downgrades: 123,
-      churnRate: 2.8,
-      revenue: 147890
-    },
-    geographicData: [
-      { country: 'United States', users: 45678, percentage: 35 },
-      { country: 'United Kingdom', users: 23456, percentage: 18 },
-      { country: 'Canada', users: 15678, percentage: 12 },
-      { country: 'Germany', users: 12345, percentage: 10 },
-      { country: 'Australia', users: 9876, percentage: 8 },
-      { country: 'Other', users: 22967, percentage: 17 },
-    ]
-  };
+  // Show error if no analytics data available
+  if (!analytics) {
+    return (
+      <div className="min-h-screen bg-netflix-black p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-netflix-dark-gray rounded-xl p-8 border border-gray-800 text-center">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-white mb-2">No Analytics Data Available</h2>
+            <p className="text-gray-400 mb-6">
+              {error || 'Unable to load analytics data. Please try again later.'}
+            </p>
+            <button
+              onClick={fetchAnalytics}
+              className="bg-netflix-red hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const maxViews = Math.max(...displayData.contentPerformance.map(c => c.views));
+  const displayData = analytics;
+  const maxViews = displayData.contentPerformance?.length > 0
+    ? Math.max(...displayData.contentPerformance.map(c => c.views))
+    : 1;
 
   if (loading) {
     return (

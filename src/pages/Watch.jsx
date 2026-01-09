@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { tmdbApi } from '../lib/videoProviders';
 import VideoPlayer from '../components/VideoPlayer';
@@ -8,6 +8,7 @@ const Watch = () => {
   const { type, id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const playerRef = useRef(null);
 
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -182,23 +183,26 @@ const Watch = () => {
   }
 
   return (
-    <VideoPlayer
-      tmdbId={parseInt(id)}
-      type={type}
-      season={currentSeason}
-      episode={currentEpisode}
-      title={getTitle()}
-      backdrop={content.backdrop_path}
-      onClose={handleClose}
-      onNextEpisode={goToNextEpisode}
-      onPreviousEpisode={goToPreviousEpisode}
-      hasNextEpisode={hasNextEpisode()}
-      hasPreviousEpisode={hasPreviousEpisode()}
-      seasonData={seasonData}
-      allSeasons={allSeasons}
-      onSeasonChange={handleSeasonChange}
-      onEpisodeChange={handleEpisodeChange}
-    />
+    <div className="relative">
+      <VideoPlayer
+        ref={playerRef}
+        tmdbId={parseInt(id)}
+        type={type}
+        season={currentSeason}
+        episode={currentEpisode}
+        title={getTitle()}
+        backdrop={content.backdrop_path}
+        onClose={handleClose}
+        onNextEpisode={goToNextEpisode}
+        onPreviousEpisode={goToPreviousEpisode}
+        hasNextEpisode={hasNextEpisode()}
+        hasPreviousEpisode={hasPreviousEpisode()}
+        seasonData={seasonData}
+        allSeasons={allSeasons}
+        onSeasonChange={handleSeasonChange}
+        onEpisodeChange={handleEpisodeChange}
+      />
+    </div>
   );
 };
 

@@ -145,10 +145,7 @@ const SubscriptionForm = ({ subscription, plans, users, onClose, onSave, loading
                 onChange={(e) => setFormData({ ...formData, paymentMethodId: e.target.value })}
                 className="w-full bg-netflix-medium-gray text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-netflix-red"
               >
-                <option value="">Select payment method</option>
-                <option value="card_123">Visa ending in 4242</option>
-                <option value="card_456">Mastercard ending in 8888</option>
-                <option value="card_789">PayPal</option>
+                <option value="">No payment method available</option>
               </select>
             </div>
 
@@ -217,37 +214,22 @@ const BillingHistoryModal = ({ subscription, onClose }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock billing history data
-    const mockHistory = [
-      {
-        id: 1,
-        date: '2024-01-01',
-        amount: 9.99,
-        status: 'paid',
-        description: 'Monthly subscription - Premium Plan',
-        paymentMethod: 'Visa ending in 4242'
-      },
-      {
-        id: 2,
-        date: '2023-12-01',
-        amount: 9.99,
-        status: 'paid',
-        description: 'Monthly subscription - Premium Plan',
-        paymentMethod: 'Visa ending in 4242'
-      },
-      {
-        id: 3,
-        date: '2023-11-01',
-        amount: 9.99,
-        status: 'failed',
-        description: 'Monthly subscription - Premium Plan',
-        paymentMethod: 'Visa ending in 4242',
-        retryDate: '2023-11-03'
+    // Fetch billing history from API
+    const fetchBillingHistory = async () => {
+      try {
+        // TODO: Replace with actual API call
+        // const history = await adminApi.getBillingHistory(subscription.id);
+        // setBillingHistory(history);
+        setBillingHistory([]);
+      } catch (error) {
+        console.error('Failed to fetch billing history:', error);
+        setBillingHistory([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setBillingHistory(mockHistory);
-    setLoading(false);
+    };
+
+    fetchBillingHistory();
   }, [subscription]);
 
   return (
@@ -272,6 +254,14 @@ const BillingHistoryModal = ({ subscription, onClose }) => {
             <div className="flex items-center justify-center h-64">
               <div className="w-16 h-16 border-4 border-netflix-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             </div>
+          ) : billingHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-xl font-bold text-white mb-2">No Billing History</h3>
+              <p className="text-gray-400">No billing transactions found for this subscription.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {billingHistory.map((transaction) => (
@@ -291,8 +281,8 @@ const BillingHistoryModal = ({ subscription, onClose }) => {
                     <div className="text-right">
                       <div className="text-white font-medium">${transaction.amount}</div>
                       <div className={`text-sm ${
-                        transaction.status === 'paid' ? 'text-green-400' : 
-                        transaction.status === 'failed' ? 'text-red-400' : 
+                        transaction.status === 'paid' ? 'text-green-400' :
+                        transaction.status === 'failed' ? 'text-red-400' :
                         'text-yellow-400'
                       }`}>
                         {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
@@ -341,51 +331,14 @@ const SubscriptionsManagement = () => {
         status: filter.status !== 'all' ? filter.status : undefined,
         plan: filter.plan !== 'all' ? filter.plan : undefined,
         search: searchQuery || undefined
-      }).catch(() => {
-        // Demo data for fallback
-        return {
-          subscriptions: [
-            {
-              id: 1,
-              user: { id: 1, name: 'John Doe', email: 'john@example.com' },
-              plan: { id: 3, name: 'Premium', price: 9.99 },
-              status: 'active',
-              startDate: '2024-01-01',
-              nextBilling: '2025-01-01',
-              features: ['HD Streaming', '4K Content', '4 Devices'],
-              paymentMethod: { id: 'card_123', type: 'visa', last4: '4242' }
-            },
-            {
-              id: 2,
-              user: { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-              plan: { id: 1, name: 'Basic', price: 4.99 },
-              status: 'active',
-              startDate: '2024-02-15',
-              nextBilling: '2025-02-15',
-              features: ['SD Streaming', '1 Device'],
-              paymentMethod: { id: 'card_456', type: 'mastercard', last4: '8888' }
-            },
-            {
-              id: 3,
-              user: { id: 3, name: 'Bob Johnson', email: 'bob@example.com' },
-              plan: { id: 3, name: 'Premium', price: 9.99 },
-              status: 'cancelled',
-              startDate: '2024-03-01',
-              nextBilling: '2025-03-01',
-              features: ['HD Streaming', '4K Content', '4 Devices'],
-              cancellationDate: '2024-12-15',
-              paymentMethod: { id: 'card_789', type: 'paypal' }
-            }
-          ],
-          totalPages: 1,
-          totalCount: 3
-        };
       });
 
-      setSubscriptions(data.subscriptions || data);
+      setSubscriptions(data.subscriptions || []);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
       console.error('Failed to fetch subscriptions:', error);
+      setSubscriptions([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -393,29 +346,22 @@ const SubscriptionsManagement = () => {
 
   const fetchPlans = async () => {
     try {
-      const plansData = [
-        { id: 1, name: 'Basic', price: 4.99, features: ['SD Streaming', '1 Device'], maxScreenQuality: '480p' },
-        { id: 2, name: 'Standard', price: 7.99, features: ['HD Streaming', '2 Devices'], maxScreenQuality: '1080p' },
-        { id: 3, name: 'Premium', price: 9.99, features: ['4K Streaming', '4 Devices'], maxScreenQuality: '4K' }
-      ];
-      setPlans(plansData);
+      // TODO: Replace with actual API call
+      // const plansData = await adminApi.getPlans();
+      setPlans([]);
     } catch (error) {
       console.error('Failed to fetch plans:', error);
+      setPlans([]);
     }
   };
 
   const fetchUsers = async () => {
     try {
-      const usersData = [
-        { id: 1, name: 'John Doe', email: 'john@example.com', status: 'active' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'active' },
-        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', status: 'active' },
-        { id: 4, name: 'Alice Williams', email: 'alice@example.com', status: 'active' },
-        { id: 5, name: 'Charlie Brown', email: 'charlie@example.com', status: 'active' }
-      ];
-      setUsers(usersData);
+      const usersData = await adminApi.getUsers({ limit: 100 });
+      setUsers(usersData.users || []);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
     }
   };
 

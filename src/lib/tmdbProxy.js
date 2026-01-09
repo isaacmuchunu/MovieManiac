@@ -5,8 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const TMDB_PROXY_URL = `${API_BASE_URL}/api/tmdb`;
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-// Temporary workaround: Use direct TMDB API if proxy fails
-const TMDB_API_KEY = import.meta.env.VITE_TEMP_TMDB_API_KEY || 'c8e2dd16dcba933bec1d40b53b01a87d'; // Public key for demo
+// TMDB API configuration - all requests go through backend proxy
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 // Helper function to make API requests with fallback
@@ -33,30 +32,8 @@ const fetchFromProxy = async (endpoint, params = {}) => {
 
     return response.json();
   } catch (error) {
-    console.warn('Backend proxy failed, falling back to direct TMDB API:', error.message);
-    
-    // Fallback to direct TMDB API
-    const tmdbUrl = new URL(`${TMDB_BASE_URL}${endpoint.replace('/tmdb', '')}`);
-    tmdbUrl.searchParams.set('api_key', TMDB_API_KEY);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        tmdbUrl.searchParams.set(key, value);
-      }
-    });
-
-    const response = await fetch(tmdbUrl.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const apiError = new Error(`TMDB API error: ${response.status}`);
-      apiError.status = response.status;
-      throw apiError;
-    }
-
-    return response.json();
+    console.error('Backend proxy failed:', error.message);
+    throw new Error('Unable to fetch movie data. Please ensure the backend is running.');
   }
 };
 

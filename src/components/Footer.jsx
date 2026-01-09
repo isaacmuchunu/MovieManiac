@@ -28,18 +28,18 @@ const YoutubeIcon = () => (
 
 const Footer = () => {
   const footerLinks = [
-    { label: 'Audio Description', href: '#' },
-    { label: 'Help Center', href: '#' },
-    { label: 'Gift Cards', href: '#' },
-    { label: 'Media Center', href: '#' },
-    { label: 'Investor Relations', href: '#' },
-    { label: 'Jobs', href: '#' },
-    { label: 'Terms of Use', href: '#' },
-    { label: 'Privacy', href: '#' },
-    { label: 'Legal Notices', href: '#' },
-    { label: 'Cookie Preferences', href: '#' },
-    { label: 'Corporate Information', href: '#' },
-    { label: 'Contact Us', href: '#' },
+    { label: 'Help Center', href: '/legal/help' },
+    { label: 'Terms of Use', href: '/legal/terms' },
+    { label: 'Privacy Policy', href: '/legal/privacy' },
+    { label: 'Contact Us', href: 'mailto:support@moovie.com' },
+    { label: 'Audio Description', href: '/legal/audio-description' },
+    { label: 'Gift Cards', href: '/legal/gift-cards' },
+    { label: 'Media Center', href: '/legal/media' },
+    { label: 'Investor Relations', href: '/legal/investors' },
+    { label: 'Jobs', href: '/legal/careers' },
+    { label: 'Legal Notices', href: '/legal/terms' },
+    { label: 'Cookie Preferences', href: '/legal/cookies' },
+    { label: 'Corporate Information', href: '/legal/corporate' },
   ];
 
   return (
@@ -64,13 +64,23 @@ const Footer = () => {
         {/* Links Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {footerLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-sm hover:underline"
-            >
-              {link.label}
-            </a>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-sm hover:underline"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-sm hover:underline"
+              >
+                {link.label}
+              </a>
+            )
           ))}
         </div>
 

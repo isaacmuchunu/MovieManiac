@@ -8,6 +8,7 @@ import { cache } from '../config/redis.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { transcodeToHLS, generateThumbnail } from '../services/transcoderService.js';
+import { analyticsService } from '../services/analyticsService.js';
 import { logger } from '../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +60,177 @@ router.get('/stats', asyncHandler(async (req, res) => {
       viewsLast24h: watchHistory,
     },
   });
+}));
+
+// Analytics endpoint - comprehensive analytics data
+router.get('/analytics', asyncHandler(async (req, res) => {
+  const { period = '7d', startDate, endDate } = req.query;
+
+  try {
+    // Get real-time summary
+    const realTimeSummary = await analyticsService.getRealTimeSummary();
+
+    // Calculate date range based on period
+    const now = new Date();
+    let start, end;
+
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+    } else {
+      end = now;
+      switch (period) {
+        case '24h':
+          start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    // Get analytics data from database
+    const [
+      totalViews,
+      uniqueViewers,
+      watchHistory,
+      topContent,
+      userGrowth,
+      deviceStats,
+      subscriptionStats
+    ] = await Promise.all([
+      // Total views in period
+      prisma.analyticsEvent.count({
+        where: {
+          action: 'VIDEO_VIEW',
+          createdAt: { gte: start, lte: end }
+        }
+      }),
+
+      // Unique viewers
+      prisma.analyticsEvent.groupBy({
+        by: ['userId'],
+        where: {
+          action: 'VIDEO_VIEW',
+          createdAt: { gte: start, lte: end }
+        }
+      }),
+
+      // Average watch time from watch history
+      prisma.watchHistory.aggregate({
+        _avg: { progress: true },
+        _sum: { progress: true },
+        where: {
+          watchedAt: { gte: start, lte: end }
+        }
+      }),
+
+      // Top 10 most viewed content
+      prisma.watchHistory.groupBy({
+        by: ['contentId'],
+        _count: { id: true },
+        where: {
+          watchedAt: { gte: start, lte: end }
+        },
+        orderBy: {
+          _count: { id: 'desc' }
+        },
+        take: 10
+      }),
+
+      // User growth over period
+      prisma.user.groupBy({
+        by: ['createdAt'],
+        _count: { id: true },
+        where: {
+          createdAt: { gte: start, lte: end }
+        }
+      }),
+
+      // Device/platform stats
+      prisma.analyticsEvent.groupBy({
+        by: ['metadata'],
+        _count: { id: true },
+        where: {
+          createdAt: { gte: start, lte: end }
+        }
+      }),
+
+      // Subscription statistics
+      prisma.subscription.groupBy({
+        by: ['plan', 'status'],
+        _count: { id: true }
+      })
+    ]);
+
+    // Format response
+    const analytics = {
+      overview: {
+        totalViews,
+        uniqueViewers: uniqueViewers.length,
+        avgWatchTime: watchHistory._avg.progress
+          ? `${Math.round(watchHistory._avg.progress)} min`
+          : '0 min',
+        totalWatchTime: watchHistory._sum.progress || 0,
+        activeUsers: realTimeSummary.activeUsers || 0,
+        currentViewers: realTimeSummary.currentViewers || 0,
+      },
+      topContent: await Promise.all(
+        topContent.slice(0, 10).map(async (item) => {
+          const content = await prisma.content.findUnique({
+            where: { id: item.contentId },
+            select: { id: true, title: true, type: true, posterUrl: true }
+          });
+          return {
+            ...content,
+            views: item._count.id
+          };
+        })
+      ),
+      userGrowth: {
+        total: userGrowth.reduce((sum, day) => sum + day._count.id, 0),
+        daily: userGrowth.map(day => ({
+          date: day.createdAt,
+          count: day._count.id
+        }))
+      },
+      subscriptions: {
+        byPlan: subscriptionStats.reduce((acc, sub) => {
+          if (!acc[sub.plan]) acc[sub.plan] = 0;
+          acc[sub.plan] += sub._count.id;
+          return acc;
+        }, {}),
+        byStatus: subscriptionStats.reduce((acc, sub) => {
+          if (!acc[sub.status]) acc[sub.status] = 0;
+          acc[sub.status] += sub._count.id;
+          return acc;
+        }, {})
+      },
+      realTime: realTimeSummary,
+      period: {
+        start: start.toISOString(),
+        end: end.toISOString(),
+        label: period
+      }
+    };
+
+    res.json({
+      status: 'success',
+      data: analytics
+    });
+
+  } catch (error) {
+    logger.error('Analytics fetch error:', error);
+    throw new AppError('Failed to fetch analytics data', 500);
+  }
 }));
 
 // Content management

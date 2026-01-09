@@ -3,7 +3,6 @@ import Hero from '../components/Hero';
 import MovieRow from '../components/MovieRow';
 import TopTenRow from '../components/TopTenRow';
 import MovieModal from '../components/MovieModal';
-import AIRecommendations from '../components/AIRecommendations';
 import WatchParty from '../components/WatchParty';
 import { tmdbApi } from '../lib/tmdbProxy';
 
@@ -55,11 +54,6 @@ const Home = () => {
           movies={trendingMovies}
           onMovieClick={handleMovieClick}
         />
-
-        {/* AI Recommendations Section */}
-        <div className="px-4 md:px-14 py-8">
-          <AIRecommendations />
-        </div>
 
         {/* Top Rated */}
         <MovieRow
