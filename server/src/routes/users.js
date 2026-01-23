@@ -182,8 +182,8 @@ router.patch('/profiles/:profileId/preferences', authenticate, asyncHandler(asyn
   res.json({ status: 'success', data: preferences });
 }));
 
-// Get watch history
-router.get('/history', authenticate, asyncHandler(async (req, res) => {
+// Watch history handler
+const getWatchHistoryHandler = asyncHandler(async (req, res) => {
   const { profileId, page = 1, limit = 20 } = req.query;
 
   const where = { userId: req.user.id };
@@ -208,10 +208,14 @@ router.get('/history', authenticate, asyncHandler(async (req, res) => {
   });
 
   res.json({ status: 'success', data: history });
-}));
+});
 
-// Clear watch history
-router.delete('/history', authenticate, asyncHandler(async (req, res) => {
+// Get watch history (both routes for compatibility)
+router.get('/history', authenticate, getWatchHistoryHandler);
+router.get('/watch-history', authenticate, getWatchHistoryHandler);
+
+// Clear watch history handler
+const clearWatchHistoryHandler = asyncHandler(async (req, res) => {
   const { profileId } = req.query;
 
   const where = { userId: req.user.id };
@@ -220,6 +224,10 @@ router.delete('/history', authenticate, asyncHandler(async (req, res) => {
   await prisma.watchHistory.deleteMany({ where });
 
   res.json({ status: 'success', message: 'Watch history cleared' });
-}));
+});
+
+// Clear watch history (both routes for compatibility)
+router.delete('/history', authenticate, clearWatchHistoryHandler);
+router.delete('/watch-history', authenticate, clearWatchHistoryHandler);
 
 export default router;

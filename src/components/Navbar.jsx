@@ -1,32 +1,11 @@
+// Navbar.js
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../lib/store';
 import SmartSearch from './SmartSearch';
 import NotificationCenter from './NotificationCenter';
 import DownloadManager from './DownloadManager';
-import { COUNTRIES } from '../pages/Browse';
-
-// Genres list for navbar dropdown
-const GENRES = [
-  { name: 'Action', slug: 'action' },
-  { name: 'Adventure', slug: 'adventure' },
-  { name: 'Animation', slug: 'animation' },
-  { name: 'Comedy', slug: 'comedy' },
-  { name: 'Crime', slug: 'crime' },
-  { name: 'Documentary', slug: 'documentary' },
-  { name: 'Drama', slug: 'drama' },
-  { name: 'Family', slug: 'family' },
-  { name: 'Fantasy', slug: 'fantasy' },
-  { name: 'History', slug: 'history' },
-  { name: 'Horror', slug: 'horror' },
-  { name: 'Music', slug: 'music' },
-  { name: 'Mystery', slug: 'mystery' },
-  { name: 'Romance', slug: 'romance' },
-  { name: 'Sci-Fi', slug: 'sci-fi' },
-  { name: 'Thriller', slug: 'thriller' },
-  { name: 'War', slug: 'war' },
-  { name: 'Western', slug: 'western' },
-];
+import { GENRES, COUNTRIES } from '../pages/Browse';
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,19 +63,18 @@ const GenresDropdown = () => {
         <span>Genres</span>
         <ChevronDownIcon />
       </button>
-
       {isOpen && (
-        <div className="absolute top-full left-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[400px] max-w-[95vw]">
+        <div className="absolute top-full left-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[480px] max-w-[95vw]">
           <div className="mb-3 pb-2 border-b border-gray-700">
             <h3 className="text-white font-semibold">Browse by Genre</h3>
             <p className="text-gray-400 text-sm">Select a genre to explore</p>
           </div>
-          <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
-            {GENRES.map((genre) => (
+          <div className="grid grid-cols-4 gap-2 max-h-[28rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            {GENRES.slice(0, 28).map((genre) => (
               <button
                 key={genre.slug}
                 onClick={() => handleGenreSelect(genre)}
-                className="px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white text-sm"
+                className="px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white font-medium text-sm"
               >
                 {genre.name}
               </button>
@@ -125,6 +103,10 @@ const CountryDropdown = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const filteredCountries = COUNTRIES.filter(country =>
+    country.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleCountrySelect = (country) => {
     navigate(`/browse?country=${country.code}`);
     setIsOpen(false);
@@ -142,7 +124,6 @@ const CountryDropdown = () => {
         <span className="hidden md:inline">Country</span>
         <ChevronDownIcon />
       </button>
-
       {isOpen && (
         <div className="absolute top-full right-0 mt-3 bg-netflix-dark-gray/98 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[480px] max-w-[95vw]">
           <div className="mb-3 pb-2 border-b border-gray-700">
@@ -164,14 +145,12 @@ const CountryDropdown = () => {
             </svg>
           </div>
           
-          <div className="grid grid-cols-6 gap-1 max-h-[450px] overflow-y-auto text-xs">
-            {COUNTRIES.filter(country => 
-    country.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ).map((country) => (
+          <div className="grid grid-cols-6 gap-2 max-h-[450px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            {filteredCountries.map((country) => (
               <button
                 key={country.code}
                 onClick={() => handleCountrySelect(country)}
-                className="px-3 py-2.5 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white text-sm"
+                className="px-2 py-2 rounded-lg text-left transition-all hover:bg-gray-700 text-gray-300 hover:text-white font-medium text-xs truncate"
               >
                 {country.name}
               </button>
@@ -240,7 +219,6 @@ const Navbar = ({ onSearch }) => {
               <span className="text-white">M</span>OOVIE
             </span>
           </Link>
-
           {/* Desktop Navigation */}
           <ul className="hidden lg:flex items-center gap-5">
             {navLinks.filter(link => !link.requiresAuth || isAuthenticated).map((link) => (
@@ -268,7 +246,6 @@ const Navbar = ({ onSearch }) => {
               <CountryDropdown />
             </li>
           </ul>
-
           {/* Mobile Menu Button */}
           <div className="lg:hidden relative">
             <button
@@ -277,10 +254,9 @@ const Navbar = ({ onSearch }) => {
             >
               Menu <ChevronDownIcon />
             </button>
-
             {/* Mobile Dropdown */}
             {showMobileMenu && (
-              <div className="absolute top-full left-0 mt-2 w-72 bg-black/95 border border-gray-700 rounded max-h-[80vh] overflow-y-auto">
+              <div className="absolute top-full left-0 mt-2 w-72 bg-black/95 border border-gray-700 rounded max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
                 <ul className="py-2">
                   {navLinks.map((link) => (
                     <li key={link.path}>
@@ -296,11 +272,11 @@ const Navbar = ({ onSearch }) => {
                   <li className="border-t border-gray-700 mt-2 pt-2">
                     <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Genres</span>
                     <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                      {GENRES.slice(0, 12).map((genre) => (
+                      {GENRES.slice(0, 28).map((genre) => (
                         <Link
                           key={genre.slug}
                           to={`/browse/${genre.slug}`}
-                          className="px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded"
+                          className="px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white rounded font-medium"
                           onClick={() => setShowMobileMenu(false)}
                         >
                           {genre.name}
@@ -310,12 +286,12 @@ const Navbar = ({ onSearch }) => {
                   </li>
                   <li className="border-t border-gray-700 mt-2 pt-2">
                     <span className="block px-4 py-2 text-xs text-gray-500 uppercase">Countries</span>
-                    <div className="grid grid-cols-3 gap-0.5 px-2 pb-2">
+                    <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                       {COUNTRIES.map((country) => (
                         <Link
                           key={country.code}
                           to={`/browse?country=${country.code}`}
-                          className="px-2 py-1 text-xs text-gray-300 hover:bg-gray-800 hover:text-white rounded"
+                          className="px-2 py-1 text-xs text-gray-300 hover:bg-gray-800 hover:text-white rounded font-medium"
                           onClick={() => setShowMobileMenu(false)}
                         >
                           {country.name}
@@ -328,7 +304,6 @@ const Navbar = ({ onSearch }) => {
             )}
           </div>
         </div>
-
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Smart Search */}
@@ -339,7 +314,6 @@ const Navbar = ({ onSearch }) => {
           >
             <SearchIcon />
           </button>
-
           {/* Downloads */}
           {isAuthenticated && (
             <div className="relative">
@@ -357,12 +331,10 @@ const Navbar = ({ onSearch }) => {
               )}
             </div>
           )}
-
           {/* Kids */}
           <Link to="/kids" className="hidden md:block text-sm text-gray-300 hover:text-white transition-colors">
             Kids
           </Link>
-
           {/* Notifications */}
           <div className="relative">
             <button
@@ -379,7 +351,6 @@ const Navbar = ({ onSearch }) => {
               <NotificationCenter onClose={() => setShowNotifications(false)} />
             )}
           </div>
-
           {/* Profile / Auth */}
           {isAuthenticated ? (
             <div className="relative group">
@@ -395,7 +366,6 @@ const Navbar = ({ onSearch }) => {
                 </div>
                 <ChevronDownIcon />
               </button>
-
               {/* Profile Dropdown */}
               <div className="absolute right-0 top-full mt-2 w-56 bg-black/95 border border-gray-700 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 <ul className="py-2">
@@ -451,7 +421,6 @@ const Navbar = ({ onSearch }) => {
           )}
         </div>
       </div>
-
       {/* Smart Search Overlay */}
       {showSmartSearch && (
         <SmartSearch

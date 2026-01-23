@@ -1,7 +1,7 @@
 // Backend API Service - Connects frontend to the Moovie server
 // Handles authentication, user management, content, and analytics
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
 
 // Helper to get auth headers
 const getAuthHeaders = () => {

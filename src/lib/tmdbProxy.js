@@ -1,8 +1,8 @@
 // TMDB Proxy Client - Secure API access through backend
 // All TMDB API calls are routed through the backend to keep the API key secure
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const TMDB_PROXY_URL = `${API_BASE_URL}/api/tmdb`;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
+const TMDB_PROXY_URL = `${API_BASE_URL}/tmdb`;
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 // TMDB API configuration - all requests go through backend proxy

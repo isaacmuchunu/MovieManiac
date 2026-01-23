@@ -107,6 +107,25 @@ class ApiClient {
     return this.request('/auth/me');
   }
 
+  async verifyEmail(email, code) {
+    const response = await this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+    if (response.data?.tokens?.accessToken) {
+      this.setToken(response.data.tokens.accessToken);
+      localStorage.setItem('accessToken', response.data.tokens.accessToken);
+    }
+    return response;
+  }
+
+  async resendVerification(email) {
+    return this.request('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
   // Content
   async getContent(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -209,6 +228,8 @@ api.auth = {
   login: (email, password) => api.login(email, password),
   logout: () => api.logout(),
   getMe: () => api.getMe(),
+  verifyEmail: (email, code) => api.verifyEmail(email, code),
+  resendVerification: (email) => api.resendVerification(email),
 };
 
 export default api;

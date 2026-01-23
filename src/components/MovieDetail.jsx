@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MovieRow from './MovieRow';
 import { tmdbApi } from '../lib/tmdbProxy';
+import api from '../lib/api';
+import { useAuthStore } from '../lib/store';
 
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
 
@@ -38,12 +40,14 @@ const StarIcon = () => (
 const MovieDetail = () => {
   const { movieId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [movie, setMovie] = useState(null);
   const [credits, setCredits] = useState(null);
   const [videos, setVideos] = useState([]);
   const [similar, setSimilar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inMyList, setInMyList] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchMovieData = async () => {
@@ -63,10 +67,29 @@ const MovieDetail = () => {
         setSimilar(similarData.results?.slice(0, 20) || movieData.similar?.results?.slice(0, 20) || []);
 
         // Check if in my list
-        const savedList = localStorage.getItem('moovie-mylist');
-        if (savedList) {
-          const list = JSON.parse(savedList);
-          setInMyList(list.some(m => m.id === movieData.id));
+        if (isAuthenticated) {
+          try {
+            const watchlistResponse = await api.getWatchlist();
+            const watchlist = watchlistResponse.data || [];
+            // Check if movie is in watchlist (compare with tmdbId or id)
+            setInMyList(watchlist.some(item =>
+              item.tmdbId === movieData.id || item.id === String(movieData.id)
+            ));
+          } catch (err) {
+            console.error('Error checking watchlist:', err);
+            // Fall back to localStorage
+            const savedList = localStorage.getItem('moovie-mylist');
+            if (savedList) {
+              const list = JSON.parse(savedList);
+              setInMyList(list.some(m => m.id === movieData.id));
+            }
+          }
+        } else {
+          const savedList = localStorage.getItem('moovie-mylist');
+          if (savedList) {
+            const list = JSON.parse(savedList);
+            setInMyList(list.some(m => m.id === movieData.id));
+          }
         }
       } catch (error) {
         console.error('Error fetching movie:', error);
@@ -77,20 +100,40 @@ const MovieDetail = () => {
 
     fetchMovieData();
     window.scrollTo(0, 0);
-  }, [movieId]);
+  }, [movieId, isAuthenticated]);
 
-  const toggleMyList = () => {
-    const savedList = localStorage.getItem('moovie-mylist');
-    let list = savedList ? JSON.parse(savedList) : [];
+  const toggleMyList = async () => {
+    if (watchlistLoading) return;
 
-    if (inMyList) {
-      list = list.filter(m => m.id !== movie.id);
+    if (isAuthenticated) {
+      // Sync with backend API
+      setWatchlistLoading(true);
+      try {
+        if (inMyList) {
+          await api.removeFromWatchlist(String(movie.id));
+        } else {
+          await api.addToWatchlist(String(movie.id));
+        }
+        setInMyList(!inMyList);
+      } catch (err) {
+        console.error('Error updating watchlist:', err);
+      } finally {
+        setWatchlistLoading(false);
+      }
     } else {
-      list.push(movie);
-    }
+      // Use localStorage for non-authenticated users
+      const savedList = localStorage.getItem('moovie-mylist');
+      let list = savedList ? JSON.parse(savedList) : [];
 
-    localStorage.setItem('moovie-mylist', JSON.stringify(list));
-    setInMyList(!inMyList);
+      if (inMyList) {
+        list = list.filter(m => m.id !== movie.id);
+      } else {
+        list.push(movie);
+      }
+
+      localStorage.setItem('moovie-mylist', JSON.stringify(list));
+      setInMyList(!inMyList);
+    }
   };
 
   const getRuntime = () => {

@@ -18,6 +18,15 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const verifyEmailSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  code: z.string().length(6, 'Verification code must be 6 digits'),
+});
+
+const resendVerificationSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
 // Set cookie options
 const getCookieOptions = (maxAge) => ({
   httpOnly: true,
@@ -29,15 +38,55 @@ const getCookieOptions = (maxAge) => ({
 // Register
 router.post('/register', asyncHandler(async (req, res) => {
   const data = registerSchema.parse(req.body);
-  const { user, tokens } = await authService.registerUser(data);
+  const result = await authService.registerUser(data);
 
-  // Set cookies
-  res.cookie('accessToken', tokens.accessToken, getCookieOptions(15 * 60 * 1000)); // 15 min
-  res.cookie('refreshToken', tokens.refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000)); // 7 days
+  // New flow: requires email verification
+  if (result.requiresVerification) {
+    res.status(201).json({
+      status: 'success',
+      data: {
+        requiresVerification: true,
+        email: result.email,
+        message: result.message,
+      },
+    });
+    return;
+  }
+
+  // Legacy flow (shouldn't happen with new code, but kept for safety)
+  const { user, tokens } = result;
+  res.cookie('accessToken', tokens.accessToken, getCookieOptions(15 * 60 * 1000));
+  res.cookie('refreshToken', tokens.refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
   res.status(201).json({
     status: 'success',
     data: { user, tokens },
+  });
+}));
+
+// Verify email with OTP
+router.post('/verify-email', asyncHandler(async (req, res) => {
+  const data = verifyEmailSchema.parse(req.body);
+  const { user, tokens } = await authService.verifyEmail(data.email, data.code);
+
+  // Set cookies
+  res.cookie('accessToken', tokens.accessToken, getCookieOptions(15 * 60 * 1000));
+  res.cookie('refreshToken', tokens.refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+
+  res.json({
+    status: 'success',
+    data: { user, tokens },
+  });
+}));
+
+// Resend verification code
+router.post('/resend-verification', asyncHandler(async (req, res) => {
+  const data = resendVerificationSchema.parse(req.body);
+  const result = await authService.resendVerificationCode(data.email);
+
+  res.json({
+    status: 'success',
+    message: result.message,
   });
 }));
 

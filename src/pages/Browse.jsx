@@ -1,3 +1,4 @@
+// Browse.js
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
@@ -28,7 +29,7 @@ const TMDB_GENRE_IDS = {
 };
 
 // 36 genres for 4x9 grid
-const GENRES = [
+export const GENRES = [
   { name: 'Action', slug: 'action', icon: '💥' },
   { name: 'Adventure', slug: 'adventure', icon: '🗺️' },
   { name: 'Animation', slug: 'animation', icon: '🎬' },
@@ -149,9 +150,8 @@ const GenreDropdown = ({ currentGenre, onSelect }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-netflix-dark-gray hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg transition-colors border border-gray-700"
+        className="flex items-center gap-2 bg-netflix-dark-gray hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg transition-colors border border-gray-700 shadow-md hover:shadow-lg"
       >
-        <span className="text-lg">{currentGenre?.icon || '🎬'}</span>
         <span className="font-medium">{currentGenre?.name || 'Browse Genres'}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -162,26 +162,24 @@ const GenreDropdown = ({ currentGenre, onSelect }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-netflix-dark-gray border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[600px] max-w-[95vw]">
+        <div className="absolute top-full left-0 mt-2 bg-netflix-dark-gray border border-gray-700 rounded-xl shadow-2xl z-50 p-4 w-[480px] max-w-[95vw]">
           <div className="mb-3 pb-2 border-b border-gray-700">
             <h3 className="text-white font-semibold">Select Genre</h3>
           </div>
-          <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+          <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
             <button
               onClick={() => {
                 onSelect(null);
                 setIsOpen(false);
               }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+              className={`px-3 py-2 rounded-lg text-left transition-colors font-medium text-sm ${
                 !currentGenre
                   ? 'bg-netflix-red text-white'
                   : 'hover:bg-gray-700 text-gray-300'
               }`}
             >
-              <span>🎬</span>
-              <span className="text-sm truncate">All Genres</span>
+              All Genres
             </button>
             {GENRES.map((genre) => (
               <button
@@ -190,14 +188,13 @@ const GenreDropdown = ({ currentGenre, onSelect }) => {
                   onSelect(genre);
                   setIsOpen(false);
                 }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                className={`px-3 py-2 rounded-lg text-left transition-colors font-medium text-sm ${
                   currentGenre?.slug === genre.slug
                     ? 'bg-netflix-red text-white'
                     : 'hover:bg-gray-700 text-gray-300'
                 }`}
               >
-                <span>{genre.icon}</span>
-                <span className="text-sm truncate">{genre.name}</span>
+                {genre.name}
               </button>
             ))}
           </div>
@@ -215,7 +212,6 @@ function Browse() {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
-
   // Filter states
   const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'all');
   const [selectedCountry, setSelectedCountry] = useState(searchParams.get('country') || '');
@@ -243,18 +239,14 @@ function Browse() {
       setLoading(true);
       try {
         let results = [];
-
         const fetchMovies = selectedType === 'all' || selectedType === 'movie';
         const fetchTV = selectedType === 'all' || selectedType === 'series';
-
         const genreId = genre ? TMDB_GENRE_IDS[genre] : null;
 
         if (genreId) {
           const moviePromise = fetchMovies ? tmdbApi.discoverByGenre(genreId, 'movie') : Promise.resolve({ results: [] });
           const tvPromise = fetchTV ? tmdbApi.discoverByGenre(genreId, 'tv') : Promise.resolve({ results: [] });
-
           const [movieData, tvData] = await Promise.all([moviePromise, tvPromise]);
-
           results = [
             ...(movieData.results || []).map(m => ({ ...m, media_type: 'movie' })),
             ...(tvData.results || []).map(t => ({ ...t, media_type: 'tv' }))
@@ -263,9 +255,7 @@ function Browse() {
           // Fetch by country
           const moviePromise = fetchMovies ? tmdbApi.discoverByCountry(selectedCountry, 'movie') : Promise.resolve({ results: [] });
           const tvPromise = fetchTV ? tmdbApi.discoverByCountry(selectedCountry, 'tv') : Promise.resolve({ results: [] });
-
           const [movieData, tvData] = await Promise.all([moviePromise, tvPromise]);
-
           results = [
             ...(movieData.results || []).map(m => ({ ...m, media_type: 'movie' })),
             ...(tvData.results || []).map(t => ({ ...t, media_type: 'tv' }))
@@ -273,7 +263,6 @@ function Browse() {
         } else {
           const trendingData = await tmdbApi.getTrending();
           results = trendingData.results || [];
-
           if (selectedType === 'movie') {
             results = results.filter(item => item.media_type === 'movie');
           } else if (selectedType === 'series') {
@@ -363,7 +352,6 @@ function Browse() {
               currentGenre={currentGenre}
               onSelect={handleGenreSelect}
             />
-
             {/* Country Badge */}
             {currentCountry && (
               <div className="flex items-center gap-2 bg-netflix-red text-white px-4 py-2 rounded-lg">
@@ -382,7 +370,6 @@ function Browse() {
               </div>
             )}
           </div>
-
           <div className="flex items-center gap-3">
             <span className="text-gray-400">{content.length} titles</span>
             <button
@@ -406,7 +393,6 @@ function Browse() {
           </div>
         </div>
       </div>
-
       {/* Filters Panel */}
       {showFilters && (
         <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl p-6 mb-10 border border-gray-800">
@@ -424,7 +410,6 @@ function Browse() {
               </button>
             )}
           </div>
-
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {/* Content Type */}
             <div>
@@ -444,7 +429,6 @@ function Browse() {
                 ))}
               </select>
             </div>
-
             {/* Country */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">Country</label>
@@ -464,7 +448,6 @@ function Browse() {
                 ))}
               </select>
             </div>
-
             {/* Year */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">Year</label>
@@ -484,7 +467,6 @@ function Browse() {
                 ))}
               </select>
             </div>
-
             {/* Rating */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">Rating</label>
@@ -503,7 +485,6 @@ function Browse() {
                 ))}
               </select>
             </div>
-
             {/* Sort */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">Sort By</label>
@@ -525,7 +506,6 @@ function Browse() {
           </div>
         </div>
       )}
-
       {/* Content Grid */}
       {loading ? (
         <Loading />
@@ -567,7 +547,6 @@ function Browse() {
           )}
         </>
       )}
-
       {/* Movie Modal */}
       {selectedMovie && (
         <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />

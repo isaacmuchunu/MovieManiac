@@ -71,7 +71,7 @@ const Analytics = () => {
             </svg>
             <h2 className="text-2xl font-bold text-white mb-2">No Analytics Data Available</h2>
             <p className="text-gray-400 mb-6">
-              {error || 'Unable to load analytics data. Please try again later.'}
+              Unable to load analytics data. Please try again later.
             </p>
             <button
               onClick={fetchAnalytics}

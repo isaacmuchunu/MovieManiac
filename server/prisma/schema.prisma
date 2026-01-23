@@ -29,6 +29,8 @@ model User {
   refreshTokens           RefreshToken[]
   notifications           Notification[]
   notificationPreferences NotificationPreferences?
+  verificationCodes       VerificationCode[]
+  analyticsEvents         AnalyticsEvent[]
 
   @@index([email])
 }
@@ -156,6 +158,7 @@ model Content {
   reviews         Review[]
   keywords        ContentKeyword[]
   notifications   Notification[]
+  analyticsEvents AnalyticsEvent[]
 
   @@index([type])
   @@index([featured])
@@ -458,7 +461,45 @@ model NotificationPreferences {
   pushNotifications  Boolean @default(true)
 }
 
+// Verification Codes (for email OTP)
+model VerificationCode {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  type      VerificationType @default(EMAIL_VERIFICATION)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, type])
+  @@index([code])
+}
+
+// Analytics Events
+model AnalyticsEvent {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  eventType  String   // PAGE_VIEW, VIDEO_PLAY, VIDEO_COMPLETE, SEARCH, etc.
+  contentId  String?
+  content    Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  metadata   Json?
+  deviceType String?
+  country    String?
+  createdAt  DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([userId])
+  @@index([contentId])
+  @@index([createdAt])
+}
+
 // Enums
+enum VerificationType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum Role {
   USER
   ADMIN

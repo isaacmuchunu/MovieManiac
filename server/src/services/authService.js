@@ -4,6 +4,7 @@ import { prisma } from '../config/database.js';
 import { cache } from '../config/redis.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { generateOTP, sendVerificationEmail } from './emailService.js';
 
 const ACCESS_TOKEN_EXPIRES = process.env.JWT_ACCESS_EXPIRES || '15m';
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES || '7d';
@@ -41,6 +42,35 @@ export const registerUser = async (data) => {
   });
 
   if (existingUser) {
+    // If user exists but not verified, allow re-registration (resend OTP)
+    if (!existingUser.emailVerified) {
+      // Delete old verification codes
+      await prisma.verificationCode.deleteMany({
+        where: { userId: existingUser.id, type: 'EMAIL_VERIFICATION' },
+      });
+
+      // Generate and store new OTP
+      const otp = generateOTP();
+      await prisma.verificationCode.create({
+        data: {
+          userId: existingUser.id,
+          code: otp,
+          type: 'EMAIL_VERIFICATION',
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+        },
+      });
+
+      // Send verification email
+      await sendVerificationEmail(existingUser.email, otp, existingUser.name);
+
+      logger.info(`Verification email resent to unverified user: ${existingUser.email}`);
+
+      return {
+        requiresVerification: true,
+        email: existingUser.email,
+        message: 'Verification code sent to your email',
+      };
+    }
     throw new AppError('Email already registered', 409);
   }
 
@@ -53,6 +83,7 @@ export const registerUser = async (data) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       name,
+      emailVerified: false,
       profiles: {
         create: {
           name,
@@ -77,21 +108,27 @@ export const registerUser = async (data) => {
     },
   });
 
-  // Generate tokens
-  const tokens = generateTokens(user.id);
-
-  // Store refresh token
-  await prisma.refreshToken.create({
+  // Generate and store OTP
+  const otp = generateOTP();
+  await prisma.verificationCode.create({
     data: {
-      token: tokens.refreshToken,
       userId: user.id,
-      expiresAt: getRefreshTokenExpiry(),
+      code: otp,
+      type: 'EMAIL_VERIFICATION',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
     },
   });
 
-  logger.info(`New user registered: ${user.email}`);
+  // Send verification email
+  await sendVerificationEmail(user.email, otp, user.name);
 
-  return { user, tokens };
+  logger.info(`New user registered (pending verification): ${user.email}`);
+
+  return {
+    requiresVerification: true,
+    email: user.email,
+    message: 'Verification code sent to your email',
+  };
 };
 
 // Login user
@@ -261,4 +298,111 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
   await cache.del(`user:${userId}`);
 
   logger.info(`Password changed for user: ${userId}`);
+};
+
+// Verify email with OTP
+export const verifyEmail = async (email, code) => {
+  // Find user
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    include: {
+      profiles: true,
+      subscription: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  if (user.emailVerified) {
+    throw new AppError('Email already verified', 400);
+  }
+
+  // Find verification code
+  const verificationCode = await prisma.verificationCode.findFirst({
+    where: {
+      userId: user.id,
+      code,
+      type: 'EMAIL_VERIFICATION',
+    },
+  });
+
+  if (!verificationCode) {
+    throw new AppError('Invalid verification code', 400);
+  }
+
+  if (verificationCode.expiresAt < new Date()) {
+    // Delete expired code
+    await prisma.verificationCode.delete({ where: { id: verificationCode.id } });
+    throw new AppError('Verification code expired', 400);
+  }
+
+  // Mark email as verified
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: true },
+  });
+
+  // Delete verification code
+  await prisma.verificationCode.deleteMany({
+    where: { userId: user.id, type: 'EMAIL_VERIFICATION' },
+  });
+
+  // Generate tokens
+  const tokens = generateTokens(user.id);
+
+  // Store refresh token
+  await prisma.refreshToken.create({
+    data: {
+      token: tokens.refreshToken,
+      userId: user.id,
+      expiresAt: getRefreshTokenExpiry(),
+    },
+  });
+
+  logger.info(`Email verified for user: ${user.email}`);
+
+  // Remove password from response
+  const { password: _, ...userWithoutPassword } = user;
+
+  return { user: { ...userWithoutPassword, emailVerified: true }, tokens };
+};
+
+// Resend verification code
+export const resendVerificationCode = async (email) => {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  if (user.emailVerified) {
+    throw new AppError('Email already verified', 400);
+  }
+
+  // Delete old verification codes
+  await prisma.verificationCode.deleteMany({
+    where: { userId: user.id, type: 'EMAIL_VERIFICATION' },
+  });
+
+  // Generate and store new OTP
+  const otp = generateOTP();
+  await prisma.verificationCode.create({
+    data: {
+      userId: user.id,
+      code: otp,
+      type: 'EMAIL_VERIFICATION',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+    },
+  });
+
+  // Send verification email
+  await sendVerificationEmail(user.email, otp, user.name);
+
+  logger.info(`Verification code resent to: ${user.email}`);
+
+  return { message: 'Verification code sent' };
 };

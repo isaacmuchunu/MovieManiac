@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tmdbApi } from '../lib/videoProviders';
 import Loading from '../components/Loading';
+import api from '../lib/api';
+import { useAuthStore } from '../lib/store';
 
 function Series() {
   const { seriesId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [series, setSeries] = useState(null);
   const [seasons, setSeasons] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -14,6 +17,7 @@ function Series() {
   const [loading, setLoading] = useState(true);
   const [seasonLoading, setSeasonLoading] = useState(false);
   const [inMyList, setInMyList] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   // Fetch series details
   useEffect(() => {
@@ -38,10 +42,27 @@ function Series() {
         }
 
         // Check my list
-        const savedList = localStorage.getItem('moovie-mylist');
-        if (savedList) {
-          const list = JSON.parse(savedList);
-          setInMyList(list.some(m => m.id === data.id));
+        if (isAuthenticated) {
+          try {
+            const watchlistResponse = await api.getWatchlist();
+            const watchlist = watchlistResponse.data || [];
+            setInMyList(watchlist.some(item =>
+              item.tmdbId === data.id || item.id === String(data.id)
+            ));
+          } catch (err) {
+            console.error('Error checking watchlist:', err);
+            const savedList = localStorage.getItem('moovie-mylist');
+            if (savedList) {
+              const list = JSON.parse(savedList);
+              setInMyList(list.some(m => m.id === data.id));
+            }
+          }
+        } else {
+          const savedList = localStorage.getItem('moovie-mylist');
+          if (savedList) {
+            const list = JSON.parse(savedList);
+            setInMyList(list.some(m => m.id === data.id));
+          }
         }
       } catch (error) {
         console.error('Error fetching series:', error);
@@ -52,7 +73,7 @@ function Series() {
 
     fetchSeries();
     window.scrollTo(0, 0);
-  }, [seriesId]);
+  }, [seriesId, isAuthenticated]);
 
   // Fetch season details when selection changes
   useEffect(() => {
@@ -73,21 +94,41 @@ function Series() {
     fetchSeasonData();
   }, [seriesId, selectedSeason, series]);
 
-  const toggleMyList = () => {
-    const savedList = localStorage.getItem('moovie-mylist');
-    let list = savedList ? JSON.parse(savedList) : [];
+  const toggleMyList = async () => {
+    if (watchlistLoading) return;
 
-    if (inMyList) {
-      list = list.filter(m => m.id !== series.id);
+    if (isAuthenticated) {
+      // Sync with backend API
+      setWatchlistLoading(true);
+      try {
+        if (inMyList) {
+          await api.removeFromWatchlist(String(series.id));
+        } else {
+          await api.addToWatchlist(String(series.id));
+        }
+        setInMyList(!inMyList);
+      } catch (err) {
+        console.error('Error updating watchlist:', err);
+      } finally {
+        setWatchlistLoading(false);
+      }
     } else {
-      list.push({
-        ...series,
-        media_type: 'tv'
-      });
-    }
+      // Use localStorage for non-authenticated users
+      const savedList = localStorage.getItem('moovie-mylist');
+      let list = savedList ? JSON.parse(savedList) : [];
 
-    localStorage.setItem('moovie-mylist', JSON.stringify(list));
-    setInMyList(!inMyList);
+      if (inMyList) {
+        list = list.filter(m => m.id !== series.id);
+      } else {
+        list.push({
+          ...series,
+          media_type: 'tv'
+        });
+      }
+
+      localStorage.setItem('moovie-mylist', JSON.stringify(list));
+      setInMyList(!inMyList);
+    }
   };
 
   const handlePlay = (seasonNum, episodeNum) => {

@@ -15,8 +15,10 @@ function Register() {
     acceptTerms: false,
     acceptMarketing: false,
   });
+  const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -81,10 +83,76 @@ function Register() {
         formData.password,
         formData.name
       );
+
+      // Check if email verification is required
+      if (response.data.requiresVerification) {
+        setStep(4);
+        setResendCooldown(60);
+        // Start cooldown timer
+        const timer = setInterval(() => {
+          setResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        // Legacy flow
+        setAuth(response.data.user, response.data.tokens.accessToken);
+        navigate('/browse', { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || err.response?.data?.message || err.response?.data?.error?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (otpCode.length !== 6) {
+      setError('Please enter the 6-digit verification code');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api.auth.verifyEmail(formData.email, otpCode);
       setAuth(response.data.user, response.data.tokens.accessToken);
       navigate('/browse', { replace: true });
     } catch (err) {
-      setError(err.message || err.response?.data?.message || err.response?.data?.error?.message || 'Registration failed. Please try again.');
+      setError(err.message || 'Invalid verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+
+    setError('');
+    setLoading(true);
+
+    try {
+      await api.auth.resendVerification(formData.email);
+      setResendCooldown(60);
+      // Start cooldown timer
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      setError(err.message || 'Failed to resend code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -94,11 +162,7 @@ function Register() {
     <div className="min-h-screen relative">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <img
-          src="https://assets.nflxext.com/ffe/siteui/vlv3/9134db96-10d6-4a64-a619-a21da22f8c3b/web/IN-en-20231106-pops498-1702900-tidy-default.jpg"
-          alt="Background"
-          className="w-full h-full object-cover"
-        />
+        <div className="w-full h-full bg-gradient-to-br from-gray-900 via-black to-gray-800" />
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
@@ -122,7 +186,7 @@ function Register() {
         <div className="w-full max-w-lg">
           {/* Progress Steps */}
           <div className="flex items-center justify-center mb-8">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
@@ -139,9 +203,9 @@ function Register() {
                     s
                   )}
                 </div>
-                {s < 3 && (
+                {s < 4 && (
                   <div
-                    className={`w-16 md:w-24 h-1 ${
+                    className={`w-12 md:w-16 h-1 ${
                       s < step ? 'bg-netflix-red' : 'bg-gray-600'
                     }`}
                   />
@@ -155,7 +219,7 @@ function Register() {
             {step === 1 && (
               <div>
                 <p className="text-gray-300 text-sm uppercase tracking-wider mb-2">
-                  Step 1 of 3
+                  Step 1 of 4
                 </p>
                 <h2 className="text-white text-3xl font-bold mb-4">
                   Create your account
@@ -195,7 +259,7 @@ function Register() {
             {step === 2 && (
               <div>
                 <p className="text-gray-300 text-sm uppercase tracking-wider mb-2">
-                  Step 2 of 3
+                  Step 2 of 4
                 </p>
                 <h2 className="text-white text-3xl font-bold mb-4">
                   Create a password
@@ -284,7 +348,7 @@ function Register() {
             {step === 3 && (
               <form onSubmit={handleSubmit}>
                 <p className="text-gray-300 text-sm uppercase tracking-wider mb-2">
-                  Step 3 of 3
+                  Step 3 of 4
                 </p>
                 <h2 className="text-white text-3xl font-bold mb-4">
                   Set up your profile
@@ -380,6 +444,108 @@ function Register() {
                       ) : (
                         'Create Account'
                       )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* Step 4: OTP Verification */}
+            {step === 4 && (
+              <form onSubmit={handleVerifyOTP}>
+                <p className="text-gray-300 text-sm uppercase tracking-wider mb-2">
+                  Step 4 of 4
+                </p>
+                <h2 className="text-white text-3xl font-bold mb-4">
+                  Verify your email
+                </h2>
+                <p className="text-gray-300 mb-6">
+                  We've sent a 6-digit verification code to{' '}
+                  <span className="text-white font-medium">{formData.email}</span>
+                </p>
+
+                {error && (
+                  <div className="bg-orange-500/20 border border-orange-500 text-orange-500 rounded-md p-4 mb-6">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* OTP Input */}
+                  <div className="flex justify-center gap-2">
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtpCode(value);
+                      }}
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                      className="w-full bg-[#333] text-white text-center text-2xl tracking-[0.5em] rounded-md px-4 py-4 outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400 placeholder:text-base placeholder:tracking-normal"
+                      autoFocus
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || otpCode.length !== 6}
+                    className="w-full bg-netflix-red hover:bg-red-700 text-white font-bold py-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Verifying...
+                      </span>
+                    ) : (
+                      'Verify Email'
+                    )}
+                  </button>
+
+                  {/* Resend Code */}
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm mb-2">
+                      Didn't receive the code?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      disabled={resendCooldown > 0 || loading}
+                      className="text-netflix-red hover:underline disabled:text-gray-500 disabled:no-underline disabled:cursor-not-allowed"
+                    >
+                      {resendCooldown > 0
+                        ? `Resend code in ${resendCooldown}s`
+                        : 'Resend verification code'}
+                    </button>
+                  </div>
+
+                  {/* Change Email */}
+                  <div className="text-center pt-4 border-t border-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep(1);
+                        setOtpCode('');
+                        setError('');
+                      }}
+                      className="text-gray-400 hover:text-white text-sm"
+                    >
+                      Use a different email address
                     </button>
                   </div>
                 </div>
